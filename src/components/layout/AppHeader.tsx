@@ -16,9 +16,11 @@ const VIEW_TITLES: Record<ViewId, string> = {
   'article-detail': 'Article',
   'video-player': 'Now Playing',
   'audio-player': 'Now Playing',
+  'privacy-policy': 'Privacy Policy',
+  'terms-of-service': 'Terms of Service',
 };
 
-const SHOW_BACK: ViewId[] = ['article-detail', 'video-player', 'audio-player', 'notifications', 'search'];
+const SHOW_BACK: ViewId[] = ['article-detail', 'video-player', 'audio-player', 'notifications', 'search', 'privacy-policy', 'terms-of-service'];
 
 export function AppHeader() {
   const { currentView, navigateTo, goBack, toggleSearch, unreadNotifications } = useNavigationStore();

@@ -86,4 +86,4 @@ export interface Banner {
 
 export type TabId = 'home' | 'videos' | 'audio' | 'donate' | 'profile';
 
-export type ViewId = TabId | 'articles' | 'gallery' | 'search' | 'notifications' | 'article-detail' | 'video-player' | 'audio-player';
+export type ViewId = TabId | 'articles' | 'gallery' | 'search' | 'notifications' | 'article-detail' | 'video-player' | 'audio-player' | 'privacy-policy' | 'terms-of-service';

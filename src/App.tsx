@@ -11,6 +11,8 @@ import { GalleryView } from '@/views/GalleryView';
 import { DonationView } from '@/views/DonationView';
 import { ProfileView } from '@/views/ProfileView';
 import { NotificationsView } from '@/views/NotificationsView';
+import { PrivacyPolicyView } from '@/views/PrivacyPolicyView';
+import { TermsOfServiceView } from '@/views/TermsOfServiceView';
 import { useThemeStore } from '@/stores/themeStore';
 import { useNavigationStore } from '@/stores/navigationStore';
 
@@ -40,6 +42,8 @@ function App() {
       case 'donate': return <DonationView />;
       case 'profile': return <ProfileView />;
       case 'notifications': return <NotificationsView />;
+      case 'privacy-policy': return <PrivacyPolicyView />;
+      case 'terms-of-service': return <TermsOfServiceView />;
       default: return <HomeView />;
     }
   };

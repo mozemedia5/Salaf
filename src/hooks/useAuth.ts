@@ -6,6 +6,8 @@ import {
   signOut, 
   signInWithPopup, 
   sendPasswordResetEmail,
+  updateProfile,
+  updatePassword,
   type User
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
@@ -67,5 +69,33 @@ export function useAuth() {
     }
   };
 
-  return { user, loading, error, login, signup, logout, loginWithGoogle, resetPassword };
+  const updateUserProfile = async (displayName: string, photoURL?: string) => {
+    if (!auth.currentUser) return;
+    setError(null);
+    try {
+      await updateProfile(auth.currentUser, { displayName, photoURL });
+      setUser({ ...auth.currentUser }); // Force update state
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const updateUserPassword = async (newPassword: string) => {
+    if (!auth.currentUser) return;
+    setError(null);
+    try {
+      await updatePassword(auth.currentUser, newPassword);
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  return { 
+    user, loading, error, 
+    login, signup, logout, 
+    loginWithGoogle, resetPassword,
+    updateUserProfile, updateUserPassword 
+  };
 }

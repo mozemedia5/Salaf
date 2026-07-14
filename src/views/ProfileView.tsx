@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlayCircle, BookOpen, Headphones, Image, Heart, Clock, Download,
-  Bell, Moon, Globe, Type, Wifi, User, Lock, Shield, FileText,
-  HelpCircle, LogOut, ChevronRight, UserCheck, LayoutPanelTop
+  Bell, Moon, Globe, User, Lock, Shield, FileText,
+  HelpCircle, LogOut, ChevronRight, UserCheck
 } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { EditProfileModal } from '@/components/auth/EditProfileModal';
 
 interface MenuGroup {
   title: string;
@@ -17,10 +18,31 @@ interface MenuGroup {
 }
 
 export function ProfileView() {
-  const { openAuthModal } = useNavigationStore();
+  const { openAuthModal, navigateTo } = useNavigationStore();
   const { theme, toggleTheme } = useThemeStore();
   const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState(true);
+  
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState<'profile' | 'password'>('profile');
+
+  const handleEditProfile = () => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
+    setEditMode('profile');
+    setEditModalOpen(true);
+  };
+
+  const handleChangePassword = () => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
+    setEditMode('password');
+    setEditModalOpen(true);
+  };
 
   const menuGroups: MenuGroup[] = [
     {
@@ -46,24 +68,16 @@ export function ProfileView() {
         { icon: Bell, label: 'Notifications', toggle: true },
         { icon: Moon, label: 'Dark Mode', toggle: true, action: toggleTheme },
         { icon: Globe, label: 'Language', value: 'English' },
-        { icon: Type, label: 'Text Size', value: 'Medium' },
-        { icon: Wifi, label: 'Download Quality', value: 'High' },
       ],
     },
     {
       title: 'Account',
       items: [
-        { icon: User, label: 'Edit Profile' },
-        { icon: Lock, label: 'Change Password' },
-        { icon: Shield, label: 'Privacy Policy' },
-        { icon: FileText, label: 'Terms of Service' },
+        { icon: User, label: 'Edit Profile', action: handleEditProfile },
+        { icon: Lock, label: 'Change Password', action: handleChangePassword },
+        { icon: Shield, label: 'Privacy Policy', action: () => navigateTo('privacy-policy' as any) },
+        { icon: FileText, label: 'Terms of Service', action: () => navigateTo('terms-of-service' as any) },
         { icon: HelpCircle, label: 'Help & Support' },
-      ],
-    },
-    {
-      title: 'Supreme Admin',
-      items: [
-        { icon: LayoutPanelTop, label: 'Banner Management', action: () => alert('Banner management is restricted to Supreme Admin. Back-end handling required.') },
       ],
     },
   ];
@@ -73,16 +87,21 @@ export function ProfileView() {
       {/* Profile Header */}
       <ScrollReveal className="px-4 pt-4 pb-6 text-center">
         <div className="relative inline-block">
-          <div className="w-24 h-24 rounded-full border-[3px] border-emerald-500 overflow-hidden shadow-lg mx-auto">
-            <div className="w-full h-full gradient-emerald flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full border-[3px] border-emerald-500 overflow-hidden shadow-lg mx-auto bg-gray-100 dark:bg-gray-800">
+            <div className="w-full h-full flex items-center justify-center">
               {user?.photoURL ? (
                 <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
               ) : (
-                <UserCheck className="w-10 h-10 text-white" />
+                <div className="w-full h-full gradient-emerald flex items-center justify-center">
+                  <UserCheck className="w-10 h-10 text-white" />
+                </div>
               )}
             </div>
           </div>
-          <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900 flex items-center justify-center">
+          <button 
+            onClick={handleEditProfile}
+            className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900 flex items-center justify-center"
+          >
             <User className="w-4 h-4 text-white" />
           </button>
         </div>
@@ -188,6 +207,16 @@ export function ProfileView() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {isEditModalOpen && (
+          <EditProfileModal 
+            isOpen={isEditModalOpen} 
+            onClose={() => setEditModalOpen(false)} 
+            mode={editMode} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

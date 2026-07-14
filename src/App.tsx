@@ -14,6 +14,8 @@ import { ProfileView } from '@/views/ProfileView';
 import { NotificationsView } from '@/views/NotificationsView';
 import { PrivacyPolicyView } from '@/views/PrivacyPolicyView';
 import { TermsOfServiceView } from '@/views/TermsOfServiceView';
+import { AdminDashboardView } from '@/views/AdminDashboardView';
+import { UserQuestionsView } from '@/views/UserQuestionsView';
 import { useThemeStore } from '@/stores/themeStore';
 import { useNavigationStore } from '@/stores/navigationStore';
 
@@ -22,7 +24,6 @@ function App() {
   const setTheme = useThemeStore((s) => s.setTheme);
 
   useEffect(() => {
-    // Apply saved theme
     const saved = localStorage.getItem('noor-theme');
     if (saved) {
       try {
@@ -31,6 +32,16 @@ function App() {
       } catch { /* ignore */ }
     }
   }, [setTheme]);
+
+  // Admin dashboard is a full-screen view without the app shell
+  if (currentView === 'admin-dashboard') {
+    return <AdminDashboardView />;
+  }
+
+  // User questions view is also full-screen
+  if (currentView === 'user-questions') {
+    return <UserQuestionsView />;
+  }
 
   const renderView = () => {
     switch (currentView) {

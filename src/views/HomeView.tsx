@@ -1,4 +1,5 @@
-import { Play, BookOpen, Hand, Clock, Compass } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Play, BookOpen, Hand, Clock, Compass, MoreVertical, ExternalLink, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';
@@ -8,9 +9,13 @@ import { VideoCard } from '@/components/cards/VideoCard';
 import { AudioCard } from '@/components/cards/AudioCard';
 import { ArticleCard } from '@/components/cards/ArticleCard';
 import { CampaignCard } from '@/components/cards/CampaignCard';
+import { VideoPlayer } from '@/components/video/VideoPlayer';
 import { useNavigationStore } from '@/stores/navigationStore';
-import { CATEGORIES, VIDEOS, AUDIO_TRACKS, ARTICLES, CAMPAIGNS, GALLERY_IMAGES, DAILY_REMINDER, DAILY_VERSE, BANNERS } from '@/lib/data';
-import { useState } from 'react';
+import { useVideoStore } from '@/stores/videoStore';
+import { collection, query, onSnapshot, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { CATEGORIES, AUDIO_TRACKS, ARTICLES, CAMPAIGNS, GALLERY_IMAGES, DAILY_REMINDER, DAILY_VERSE } from '@/lib/data';
+import type { Video, Banner } from '@/types';
 
 const QUICK_ACTIONS = [
   { icon: BookOpen, label: 'Read Quran' },
@@ -21,10 +26,45 @@ const QUICK_ACTIONS = [
 
 export function HomeView() {
   const { navigateTo, setActiveTab } = useNavigationStore();
+  const videoStore = useVideoStore();
   const [activeCategory, setActiveCategory] = useState('All');
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
 
-  const filteredVideos = activeCategory === 'All' ? VIDEOS : VIDEOS.filter(v => v.category === activeCategory);
-  const filteredAudio = activeCategory === 'All' ? AUDIO_TRACKS : AUDIO_TRACKS.filter(a => a.category === activeCategory);
+  useEffect(() => {
+    const vq = query(collection(db, 'videos'));
+    const unsubVideos = onSnapshot(vq, (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Video));
+      setVideos(data.filter(v => v.isActive !== false));
+    });
+
+    const bq = query(collection(db, 'banners'), limit(10));
+    const unsubBanners = onSnapshot(bq, (snap) => {
+      setBanners(snap.docs.map(d => ({ id: d.id, ...d.data() } as Banner)).filter(b => b.isActive !== false));
+    });
+
+    return () => {
+      unsubVideos();
+      unsubBanners();
+    };
+  }, []);
+
+  const filteredVideos = activeCategory === 'All' ? videos : videos.filter(v => v.category === activeCategory);
+  const displayVideos = filteredVideos.slice(0, 4);
+  const trendingVideos = videos.slice(0, 5);
+
+  const handleVideoClick = (video: Video) => {
+    setPlayingVideo(video);
+    videoStore.setCurrentVideo(video);
+  };
+
+  const handleBannerClick = (banner: Banner) => {
+    if (banner.link) {
+      window.open(banner.link, '_blank');
+    }
+  };
 
   return (
     <div className="pb-4">
@@ -32,34 +72,18 @@ export function HomeView() {
       <ScrollReveal className="relative px-4 pt-6 pb-6 overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url(/images/divider-pattern.jpg)', backgroundSize: '300px' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/50 to-transparent dark:from-emerald-900/10 pointer-events-none" />
-        
+
         <div className="relative text-center">
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="font-arabic text-lg italic"
-            style={{ color: 'var(--text-secondary)' }}
-          >
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="font-arabic text-lg italic" style={{ color: 'var(--text-secondary)' }}>
             Assalamu Alaikum
           </motion.p>
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="font-heading font-bold text-2xl mt-1 text-gradient-emerald"
-          >
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="font-heading font-bold text-2xl mt-1 text-gradient-emerald">
             Welcome to Manhaji Salaf
           </motion.h1>
         </div>
 
         {/* Daily Reminder */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-5"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-5">
           <GlassCard className="relative overflow-hidden">
             <div className="h-1 w-full gradient-emerald rounded-t-2xl absolute top-0 left-0" />
             <p className="text-lg font-arabic italic leading-relaxed text-center" style={{ color: 'var(--text-primary)' }}>
@@ -72,13 +96,8 @@ export function HomeView() {
         </motion.div>
 
         {/* Featured Lecture */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-4 -mb-2"
-        >
-          <GlassCard className="p-0 overflow-hidden cursor-pointer group" onClick={() => navigateTo('videos')}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-4 -mb-2">
+          <GlassCard className="p-0 overflow-hidden cursor-pointer group" onClick={() => setActiveTab('videos')}>
             <div className="relative">
               <img src="/images/featured-lecture.jpg" alt="Featured" className="w-full aspect-video object-cover transition-transform duration-300 group-hover:scale-105" />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -88,12 +107,8 @@ export function HomeView() {
               </div>
             </div>
             <div className="p-4">
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">
-                Featured Lecture
-              </span>
-              <h3 className="font-heading font-semibold mt-2" style={{ color: 'var(--text-primary)' }}>
-                The Light of Faith: Understanding Iman
-              </h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">Featured Lecture</span>
+              <h3 className="font-heading font-semibold mt-2" style={{ color: 'var(--text-primary)' }}>The Light of Faith: Understanding Iman</h3>
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Sheikh Ibrahim &middot; 45 min</p>
             </div>
           </GlassCard>
@@ -107,50 +122,48 @@ export function HomeView() {
         </div>
         <div className="flex gap-2 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
           {CATEGORIES.map((cat) => (
-            <CategoryChip
-              key={cat}
-              label={cat}
-              isActive={activeCategory === cat}
-              onClick={() => setActiveCategory(cat)}
-            />
+            <CategoryChip key={cat} label={cat} isActive={activeCategory === cat} onClick={() => setActiveCategory(cat)} />
           ))}
         </div>
       </div>
 
       {/* Latest Lectures */}
-      <div className="mt-8">
-        <SectionHeader title="Latest Lectures" action="View All" onAction={() => setActiveTab('videos')} />
-        <div className="px-4 grid grid-cols-2 gap-3">
-          {filteredVideos.slice(0, 4).map((video, i) => (
-            <ScrollReveal key={video.id} delay={i * 0.05}>
-              <VideoCard video={video} />
-            </ScrollReveal>
-          ))}
+      {displayVideos.length > 0 && (
+        <div className="mt-8">
+          <SectionHeader title="Latest Lectures" action="View All" onAction={() => setActiveTab('videos')} />
+          <div className="px-4 grid grid-cols-2 gap-3">
+            {displayVideos.map((video, i) => (
+              <ScrollReveal key={video.id} delay={i * 0.05}>
+                <div onClick={() => handleVideoClick(video)}>
+                  <VideoCard video={video} />
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Trending */}
-      <div className="mt-8">
-        <SectionHeader
-          title="Trending Now"
-          action="View All"
-          onAction={() => setActiveTab('videos')}
-          icon={<span className="text-amber-500 text-lg">🔥</span>}
-        />
-        <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
-          {VIDEOS.slice(0, 5).map((video) => (
-            <div key={video.id} className="w-[260px] flex-shrink-0 snap-start">
-              <VideoCard video={video} variant="trending" />
-            </div>
-          ))}
+      {trendingVideos.length > 0 && (
+        <div className="mt-8">
+          <SectionHeader title="Trending Now" action="View All" onAction={() => setActiveTab('videos')} icon={<span className="text-amber-500 text-lg">&#128293;</span>} />
+          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
+            {trendingVideos.map((video) => (
+              <div key={video.id} className="w-[260px] flex-shrink-0 snap-start">
+                <div onClick={() => handleVideoClick(video)}>
+                  <VideoCard video={video} variant="trending" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Recent Audio */}
       <div className="mt-8">
         <SectionHeader title="Recent Audio" action="View All" onAction={() => setActiveTab('audio')} />
         <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
-          {filteredAudio.slice(0, 5).map((track) => (
+          {AUDIO_TRACKS.slice(0, 5).map((track) => (
             <div key={track.id} className="w-[180px] flex-shrink-0 snap-start">
               <AudioCard track={track} />
             </div>
@@ -221,56 +234,49 @@ export function HomeView() {
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
             <div className="relative text-center">
               <p className="text-[10px] uppercase tracking-[3px] text-emerald-500 font-semibold mb-3">Verse of the Day</p>
-              <p className="font-arabic text-xl leading-[2]" style={{ color: 'var(--text-primary)' }}>
-                {DAILY_VERSE.arabic}
-              </p>
-              <p className="text-xs italic mt-3" style={{ color: 'var(--text-muted)' }}>
-                {DAILY_VERSE.transliteration}
-              </p>
-              <p className="text-sm mt-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                {DAILY_VERSE.translation}
-              </p>
-              <p className="text-xs mt-3 text-emerald-500 font-medium">
-                — {DAILY_VERSE.reference}
-              </p>
+              <p className="font-arabic text-xl leading-[2]" style={{ color: 'var(--text-primary)' }}>{DAILY_VERSE.arabic}</p>
+              <p className="text-xs italic mt-3" style={{ color: 'var(--text-muted)' }}>{DAILY_VERSE.transliteration}</p>
+              <p className="text-sm mt-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{DAILY_VERSE.translation}</p>
+              <p className="text-xs mt-3 text-emerald-500 font-medium">— {DAILY_VERSE.reference}</p>
             </div>
           </GlassCard>
         </ScrollReveal>
       </div>
 
       {/* Admin Banners Section */}
-      <div className="mt-8">
-        <div className="px-4 mb-3 flex justify-between items-end">
-          <h2 className="font-heading font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Featured Highlights</h2>
-          <span className="text-[10px] text-emerald-500 font-medium bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">Admin Uploaded</span>
-        </div>
-        <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
-          {BANNERS.map((banner) => (
-            <div key={banner.id} className="w-[280px] flex-shrink-0 snap-start">
-              <ScrollReveal>
-                <GlassCard className="p-0 overflow-hidden cursor-pointer group">
-                  <div className="relative aspect-[16/9]">
-                    <img 
-                      src={banner.imageURL} 
-                      alt={banner.title} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wider">
-                        {banner.category}
-                      </span>
-                      <h3 className="text-white font-heading font-semibold mt-1 text-sm line-clamp-1">
-                        {banner.title}
-                      </h3>
+      {banners.length > 0 && (
+        <div className="mt-8">
+          <div className="px-4 mb-3 flex justify-between items-end">
+            <h2 className="font-heading font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Featured Highlights</h2>
+            <span className="text-[10px] text-emerald-500 font-medium bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">Admin Uploaded</span>
+          </div>
+          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
+            {banners.map((banner) => (
+              <div key={banner.id} className="w-[280px] flex-shrink-0 snap-start">
+                <ScrollReveal>
+                  <GlassCard className="p-0 overflow-hidden cursor-pointer group relative">
+                    <div className="relative aspect-[16/9]" onClick={() => handleBannerClick(banner)}>
+                      <img src={banner.imageURL} alt={banner.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wider">{banner.category}</span>
+                        <h3 className="text-white font-heading font-semibold mt-1 text-sm line-clamp-1">{banner.title}</h3>
+                      </div>
                     </div>
-                  </div>
-                </GlassCard>
-              </ScrollReveal>
-            </div>
-          ))}
+                    {/* Vertical ... button for details */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedBanner(banner); }}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors"
+                    >
+                      <MoreVertical className="w-4 h-4 text-white" />
+                    </button>
+                  </GlassCard>
+                </ScrollReveal>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Footer */}
       <div className="mt-10 pb-8 text-center">
@@ -278,6 +284,32 @@ export function HomeView() {
         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Manhaji Salaf Platform</p>
         <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Made with love for the Ummah</p>
       </div>
+
+      {/* Video Player */}
+      {playingVideo && (
+        <VideoPlayer video={playingVideo} onClose={() => setPlayingVideo(null)} />
+      )}
+
+      {/* Banner Details Modal */}
+      {selectedBanner && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedBanner(null)}>
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[380px] rounded-3xl p-5" style={{ background: 'var(--bg-secondary)', boxShadow: 'var(--shadow-lg)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-heading font-bold" style={{ color: 'var(--text-primary)' }}>{selectedBanner.title}</h3>
+              <button onClick={() => setSelectedBanner(null)} className="p-1"><X className="w-5 h-5" style={{ color: 'var(--text-muted)' }} /></button>
+            </div>
+            {selectedBanner.imageURL && <img src={selectedBanner.imageURL} alt="" className="w-full h-40 object-cover rounded-xl mb-3" />}
+            {selectedBanner.description && <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{selectedBanner.description}</p>}
+            {selectedBanner.details && <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>{selectedBanner.details}</p>}
+            {selectedBanner.link && (
+              <a href={selectedBanner.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-emerald-500 hover:text-emerald-600">
+                <ExternalLink className="w-3 h-3" /> Visit Link
+              </a>
+            )}
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,12 +3,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlayCircle, BookOpen, Headphones, Image, Heart, Clock, Download,
   Bell, Moon, Globe, User, Lock, Shield, FileText,
-  HelpCircle, LogOut, ChevronRight, UserCheck
+  HelpCircle, LogOut, ChevronRight, UserCheck, AlertTriangle
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserContentStore } from '@/stores/userContentStore';
 import { cn } from '@/lib/utils';
 import { EditProfileModal } from '@/components/auth/EditProfileModal';
 
@@ -21,10 +32,60 @@ export function ProfileView() {
   const { openAuthModal, navigateTo } = useNavigationStore();
   const { theme, toggleTheme } = useThemeStore();
   const { user, logout } = useAuth();
+  const { 
+    savedLectures, 
+    donations, 
+    listeningHistory, 
+    downloadHistory, 
+    galleryFavorites,
+    getDonationTotal,
+    getTotalListeningTime
+  } = useUserContentStore();
   const [notifications, setNotifications] = useState(true);
   
   const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [isLogoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState<'profile' | 'password'>('profile');
+
+  const handleSavedLecturesClick = () => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
+    // Navigate to saved lectures view
+    navigateTo('videos' as any);
+  };
+
+  const handleDonationHistoryClick = () => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
+    navigateTo('donate' as any);
+  };
+
+  const handleListeningHistoryClick = () => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
+    navigateTo('audio' as any);
+  };
+
+  const handleGalleryFavClick = () => {
+    if (!user) {
+      openAuthModal('login');
+      return;
+    }
+    navigateTo('gallery' as any);
+  };
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+  };
 
   const handleEditProfile = () => {
     if (!user) {
@@ -48,18 +109,16 @@ export function ProfileView() {
     {
       title: 'My Content',
       items: [
-        { icon: PlayCircle, label: 'Saved Lectures', value: '12' },
-        { icon: BookOpen, label: 'Saved Articles', value: '8' },
-        { icon: Headphones, label: 'Saved Audio', value: '5' },
-        { icon: Image, label: 'Gallery Favorites', value: '3' },
+        { icon: PlayCircle, label: 'Saved Lectures', value: `${savedLectures.length}`, action: handleSavedLecturesClick },
+        { icon: Image, label: 'Gallery Favorites', value: `${galleryFavorites.length}`, action: handleGalleryFavClick },
       ],
     },
     {
       title: 'Activity',
       items: [
-        { icon: Heart, label: 'Donation History', value: '$75' },
-        { icon: Clock, label: 'Listening History', value: '24h' },
-        { icon: Download, label: 'Downloads', value: '7' },
+        { icon: Heart, label: 'Donation History', value: `$${getDonationTotal()}`, action: handleDonationHistoryClick },
+        { icon: Clock, label: 'Listening History', value: formatTime(getTotalListeningTime()), action: handleListeningHistoryClick },
+        { icon: Download, label: 'Downloads', value: `${downloadHistory.length}`, action: () => navigateTo('audio' as any) },
       ],
     },
     {
@@ -114,9 +173,9 @@ export function ProfileView() {
 
         <div className="flex justify-center gap-8 mt-5">
           {[
-            { num: '12', label: 'Favorites' },
-            { num: '24h', label: 'Listened' },
-            { num: '$75', label: 'Donated' },
+            { num: `${galleryFavorites.length}`, label: 'Favorites' },
+            { num: formatTime(getTotalListeningTime()), label: 'Listened' },
+            { num: `$${getDonationTotal()}`, label: 'Donated' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -159,7 +218,7 @@ export function ProfileView() {
                       <item.icon className="w-4.5 h-4.5 text-emerald-500" />
                     </div>
                     <span className="flex-1 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{item.label}</span>
-                    {item.value && (
+                    {item.value && !item.toggle && (
                       <span className="text-xs mr-1" style={{ color: 'var(--text-muted)' }}>{item.value}</span>
                     )}
                     {item.toggle && (
@@ -186,7 +245,7 @@ export function ProfileView() {
                         />
                       </button>
                     )}
-                    {!item.toggle && <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />}
+                    {!item.toggle && item.action && <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />}
                   </button>
                 </ScrollReveal>
               ))}
@@ -198,7 +257,7 @@ export function ProfileView() {
         {user && (
           <div className="pt-4 pb-8">
             <button 
-              onClick={() => logout()}
+              onClick={() => setLogoutDialogOpen(true)}
               className="w-full py-3 rounded-xl border border-red-200 dark:border-red-800/50 text-red-500 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
             >
               <LogOut className="w-4 h-4" />
@@ -217,6 +276,41 @@ export function ProfileView() {
           />
         )}
       </AnimatePresence>
+
+      <AlertDialog open={isLogoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <AlertDialogContent className="rounded-3xl border-none p-8 max-w-[340px]" style={{ background: 'var(--bg-secondary)' }}>
+          <AlertDialogHeader className="items-center text-center">
+            <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-4">
+              <AlertTriangle className="w-8 h-8 text-red-500" />
+            </div>
+            <AlertDialogTitle className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Logging Out?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base" style={{ color: 'var(--text-muted)' }}>
+              Are you sure you want to log out? You'll need to sign in again to access your saved content.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-6">
+            <AlertDialogAction 
+              onClick={async () => {
+                try {
+                  await logout();
+                } catch (err) {
+                  console.error('Logout error:', err);
+                } finally {
+                  setLogoutDialogOpen(false);
+                }
+              }}
+              className="w-full h-12 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold border-none"
+            >
+              Logout
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full h-12 rounded-xl border-none font-semibold" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

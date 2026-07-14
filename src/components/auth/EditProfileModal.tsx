@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Camera, CheckCircle, AlertCircle, Lock, Eye, EyeOff } from 'lucide-react';
+import { X, User, CheckCircle, AlertCircle, Lock, Eye, EyeOff, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface EditProfileModalProps {
@@ -13,7 +13,7 @@ export function EditProfileModal({ isOpen, onClose, mode }: EditProfileModalProp
   const { user, updateUserProfile, updateUserPassword, error: authError } = useAuth();
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
+  const [address, setAddress] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +24,7 @@ export function EditProfileModal({ isOpen, onClose, mode }: EditProfileModalProp
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || '');
-      setPhotoURL(user.photoURL || '');
+      setAddress('');
     }
   }, [user]);
 
@@ -46,7 +46,7 @@ export function EditProfileModal({ isOpen, onClose, mode }: EditProfileModalProp
     setLoading(true);
     try {
       if (mode === 'profile') {
-        await updateUserProfile(displayName, photoURL);
+        await updateUserProfile(displayName, undefined);
         setSubmitted(true);
         setTimeout(() => {
           setSubmitted(false);
@@ -126,23 +126,10 @@ export function EditProfileModal({ isOpen, onClose, mode }: EditProfileModalProp
                   <div className="flex justify-center mb-6">
                     <div className="relative">
                       <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-emerald-500">
-                        {photoURL ? (
-                          <img src={photoURL} alt="Preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full gradient-emerald flex items-center justify-center">
-                            <User className="w-8 h-8 text-white" />
-                          </div>
-                        )}
+                        <div className="w-full h-full gradient-emerald flex items-center justify-center">
+                          <User className="w-8 h-8 text-white" />
+                        </div>
                       </div>
-                      <label className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900 flex items-center justify-center cursor-pointer">
-                        <Camera className="w-3.5 h-3.5 text-white" />
-                        <input 
-                          type="text" 
-                          placeholder="Image URL" 
-                          className="hidden"
-                          onChange={(e) => setPhotoURL(e.target.value)}
-                        />
-                      </label>
                     </div>
                   </div>
 
@@ -156,10 +143,10 @@ export function EditProfileModal({ isOpen, onClose, mode }: EditProfileModalProp
                       />
                     </div>
                     <div className="relative">
-                      <Camera className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--text-muted)' }} />
-                      <input
-                        type="text" placeholder="Profile Image URL" value={photoURL} onChange={(e) => setPhotoURL(e.target.value)}
-                        className="w-full h-12 pl-11 pr-4 rounded-xl border text-sm transition-colors focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
+                      <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--text-muted)' }} />
+                      <textarea
+                        placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)}
+                        className="w-full h-12 pl-11 pr-4 rounded-xl border text-sm transition-colors focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none resize-none"
                         style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                       />
                     </div>

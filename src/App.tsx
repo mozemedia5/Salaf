@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Analytics } from '@vercel/analytics/react';
 import { AppShell } from '@/components/layout/AppShell';
 import { FullAudioPlayer } from '@/components/audio/FullAudioPlayer';
 import { HomeView } from '@/views/HomeView';
@@ -58,6 +59,7 @@ function App() {
         </motion.div>
       </AnimatePresence>
       <FullAudioPlayer />
+      <Analytics />
     </AppShell>
   );
 }

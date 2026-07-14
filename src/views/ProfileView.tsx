@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  PlayCircle, BookOpen, Headphones, Image, Heart, Clock, Download,
+  PlayCircle, Image, Heart, Clock, Download,
   Bell, Moon, Globe, User, Lock, Shield, FileText,
   HelpCircle, LogOut, ChevronRight, UserCheck, AlertTriangle
 } from 'lucide-react';
@@ -34,8 +34,6 @@ export function ProfileView() {
   const { user, logout } = useAuth();
   const { 
     savedLectures, 
-    donations, 
-    listeningHistory, 
     downloadHistory, 
     galleryFavorites,
     getDonationTotal,

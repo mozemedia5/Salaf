@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { AudioTrack, Video, GalleryImage } from '@/types';
+import type { GalleryImage } from '@/types';
 
 export interface Donation {
   id: string;

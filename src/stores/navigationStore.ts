@@ -53,10 +53,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   navigateTo: (view) => {
     const tabViews: ViewId[] = ['home', 'videos', 'audio', 'donate', 'profile'];
-    set({ 
-      currentView: view, 
+    set({
+      currentView: view,
       previousView: get().currentView,
-      activeTab: tabViews.includes(view) ? (view as TabId) : get().activeTab 
+      activeTab: tabViews.includes(view) ? (view as TabId) : get().activeTab
     });
   },
 
@@ -64,8 +64,8 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     const { previousView } = get();
     if (previousView) {
       const tabViews: ViewId[] = ['home', 'videos', 'audio', 'donate', 'profile'];
-      set({ 
-        currentView: previousView, 
+      set({
+        currentView: previousView,
         previousView: null,
         activeTab: tabViews.includes(previousView) ? (previousView as TabId) : get().activeTab
       });

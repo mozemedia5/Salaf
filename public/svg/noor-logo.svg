@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" fill="none">
+  <path d="M20 4C11.163 4 4 11.163 4 20s7.163 16 16 16c1.5 0 2.95-.21 4.33-.6A10 10 0 0120 20a10 10 0 014.33 15.4C25.95 35.79 27.5 36 29 36c8.837 0 16-7.163 16-16S37.837 4 29 4a15.95 15.95 0 00-9 0z" fill="currentColor" opacity="0.9"/>
+  <circle cx="32" cy="12" r="4" fill="currentColor"/>
+  <text x="52" y="27" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="currentColor">Noor</text>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" fill="none">
+  <circle cx="22" cy="22" r="18" stroke="rgba(16,185,129,0.2)" stroke-width="4"/>
+  <path d="M22 4a18 18 0 0118 18" stroke="url(#spinner-grad)" stroke-width="4" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="spinner-grad" x1="22" y1="4" x2="40" y2="22" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10B981"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+</svg>

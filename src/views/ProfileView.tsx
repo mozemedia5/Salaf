@@ -8,6 +8,7 @@ import {
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useThemeStore } from '@/stores/themeStore';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
 interface MenuGroup {
@@ -18,6 +19,7 @@ interface MenuGroup {
 export function ProfileView() {
   const { openAuthModal } = useNavigationStore();
   const { theme, toggleTheme } = useThemeStore();
+  const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState(true);
 
   const menuGroups: MenuGroup[] = [
@@ -73,15 +75,23 @@ export function ProfileView() {
         <div className="relative inline-block">
           <div className="w-24 h-24 rounded-full border-[3px] border-emerald-500 overflow-hidden shadow-lg mx-auto">
             <div className="w-full h-full gradient-emerald flex items-center justify-center">
-              <UserCheck className="w-10 h-10 text-white" />
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
+              ) : (
+                <UserCheck className="w-10 h-10 text-white" />
+              )}
             </div>
           </div>
           <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-emerald-500 border-2 border-white dark:border-gray-900 flex items-center justify-center">
             <User className="w-4 h-4 text-white" />
           </button>
         </div>
-        <h2 className="font-heading font-bold text-xl mt-3" style={{ color: 'var(--text-primary)' }}>Guest User</h2>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Sign in to sync your data</p>
+        <h2 className="font-heading font-bold text-xl mt-3" style={{ color: 'var(--text-primary)' }}>
+          {user?.displayName || user?.email?.split('@')[0] || 'Guest User'}
+        </h2>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          {user ? user.email : 'Sign in to sync your data'}
+        </p>
 
         <div className="flex justify-center gap-8 mt-5">
           {[
@@ -102,12 +112,14 @@ export function ProfileView() {
           ))}
         </div>
 
-        <button
-          onClick={() => openAuthModal('login')}
-          className="mt-5 py-2.5 px-8 rounded-xl gradient-emerald text-white font-semibold text-sm shadow-glow"
-        >
-          Sign In
-        </button>
+        {!user && (
+          <button
+            onClick={() => openAuthModal('login')}
+            className="mt-5 py-2.5 px-8 rounded-xl gradient-emerald text-white font-semibold text-sm shadow-glow"
+          >
+            Sign In
+          </button>
+        )}
       </ScrollReveal>
 
       {/* Menu Groups */}
@@ -164,12 +176,17 @@ export function ProfileView() {
         ))}
 
         {/* Logout */}
-        <div className="pt-4 pb-8">
-          <button className="w-full py-3 rounded-xl border border-red-200 dark:border-red-800/50 text-red-500 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </div>
+        {user && (
+          <div className="pt-4 pb-8">
+            <button 
+              onClick={() => logout()}
+              className="w-full py-3 rounded-xl border border-red-200 dark:border-red-800/50 text-red-500 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

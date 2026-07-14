@@ -1,5 +1,17 @@
 import { create } from 'zustand';
 import type { GalleryImage } from '@/types';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  addDoc, 
+  deleteDoc, 
+  doc, 
+  onSnapshot,
+  Timestamp
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export interface Donation {
   id: string;
@@ -40,335 +52,172 @@ export interface DownloadHistory {
 }
 
 interface UserContentState {
+  // Loading state
+  isLoading: boolean;
+  
   // Donations
   donations: Donation[];
   totalDonated: number;
-  addDonation: (donation: Donation) => void;
-  getDonations: () => Donation[];
-  getDonationTotal: () => number;
+  fetchDonations: (userId: string) => void;
+  addDonation: (userId: string, donation: Omit<Donation, 'id'>) => Promise<void>;
 
   // Saved Lectures (Videos)
   savedLectures: SavedLecture[];
-  addSavedLecture: (lecture: SavedLecture) => void;
-  removeSavedLecture: (videoId: string) => void;
-  getSavedLectures: () => SavedLecture[];
+  fetchSavedLectures: (userId: string) => void;
+  addSavedLecture: (userId: string, lecture: Omit<SavedLecture, 'id'>) => Promise<void>;
+  removeSavedLecture: (userId: string, videoId: string) => Promise<void>;
   isSavedLecture: (videoId: string) => boolean;
 
   // Gallery Favorites
   galleryFavorites: GalleryImage[];
-  addGalleryFavorite: (image: GalleryImage) => void;
-  removeGalleryFavorite: (imageId: string) => void;
-  getGalleryFavorites: () => GalleryImage[];
+  fetchGalleryFavorites: (userId: string) => void;
+  addGalleryFavorite: (userId: string, image: GalleryImage) => Promise<void>;
+  removeGalleryFavorite: (userId: string, imageId: string) => Promise<void>;
   isGalleryFavorite: (imageId: string) => boolean;
 
   // Listening History
   listeningHistory: ListeningHistory[];
-  addListeningHistory: (history: ListeningHistory) => void;
-  getListeningHistory: () => ListeningHistory[];
+  fetchListeningHistory: (userId: string) => void;
+  addListeningHistory: (userId: string, history: Omit<ListeningHistory, 'id'>) => Promise<void>;
   getTotalListeningTime: () => number;
 
   // Download History
   downloadHistory: DownloadHistory[];
-  addDownloadHistory: (download: DownloadHistory) => void;
-  getDownloadHistory: () => DownloadHistory[];
+  fetchDownloadHistory: (userId: string) => void;
+  addDownloadHistory: (userId: string, download: Omit<DownloadHistory, 'id'>) => Promise<void>;
+
+  // Subscription un-subscribers
+  unsubscribers: (() => void)[];
 
   // Reset user content (on logout)
   resetUserContent: () => void;
 }
 
-// Mock data for initial state
-const MOCK_DONATIONS: Donation[] = [
-  {
-    id: '1',
-    campaignId: 'camp1',
-    campaignTitle: 'Quranic Education Initiative',
-    amount: 25,
-    date: '2024-01-15',
-    status: 'completed',
-  },
-  {
-    id: '2',
-    campaignId: 'camp2',
-    campaignTitle: 'Islamic Scholarship Fund',
-    amount: 50,
-    date: '2024-01-20',
-    status: 'completed',
-  },
-  {
-    id: '3',
-    campaignId: 'camp3',
-    campaignTitle: 'Hadith Preservation Project',
-    amount: 30,
-    date: '2024-02-05',
-    status: 'completed',
-  },
-  {
-    id: '4',
-    campaignId: 'camp1',
-    campaignTitle: 'Quranic Education Initiative',
-    amount: 40,
-    date: '2024-02-14',
-    status: 'completed',
-  },
-  {
-    id: '5',
-    campaignId: 'camp4',
-    campaignTitle: 'Islamic History Archive',
-    amount: 15,
-    date: '2024-02-28',
-    status: 'completed',
-  },
-];
-
-const MOCK_SAVED_LECTURES: SavedLecture[] = [
-  {
-    id: '1',
-    videoId: 'vid1',
-    title: 'Understanding the Quran - Surah Al-Fatiha',
-    scholarName: 'Dr. Ahmed Al-Mansouri',
-    category: 'Quran',
-    savedAt: '2024-01-10',
-    duration: '45:32',
-  },
-  {
-    id: '2',
-    videoId: 'vid2',
-    title: 'The Life of Prophet Muhammad',
-    scholarName: 'Sheikh Muhammad Al-Jibali',
-    category: 'Seerah',
-    savedAt: '2024-01-18',
-    duration: '52:15',
-  },
-  {
-    id: '3',
-    videoId: 'vid3',
-    title: 'Islamic Family Values',
-    scholarName: 'Dr. Fatima Al-Zahra',
-    category: 'Family',
-    savedAt: '2024-02-03',
-    duration: '38:47',
-  },
-  {
-    id: '4',
-    videoId: 'vid4',
-    title: 'Hadith Methodology and Sciences',
-    scholarName: 'Prof. Hassan Al-Banna',
-    category: 'Hadith',
-    savedAt: '2024-02-12',
-    duration: '61:20',
-  },
-];
-
-const MOCK_LISTENING_HISTORY: ListeningHistory[] = [
-  {
-    id: '1',
-    trackId: 'audio1',
-    title: 'Daily Quran Recitation - Juz 1',
-    scholarName: 'Qari Abdullah Al-Juhani',
-    listenedAt: '2024-02-28',
-    duration: '45:00',
-    timeListened: 2700,
-  },
-  {
-    id: '2',
-    trackId: 'audio2',
-    title: 'Tafsir Al-Quran - Surah Al-Baqarah Part 1',
-    scholarName: 'Dr. Ahmed Al-Mansouri',
-    listenedAt: '2024-02-27',
-    duration: '52:30',
-    timeListened: 3150,
-  },
-  {
-    id: '3',
-    trackId: 'audio3',
-    title: 'Islamic History Podcast - Early Caliphate',
-    scholarName: 'Dr. Muhammad Al-Qahhtani',
-    listenedAt: '2024-02-26',
-    duration: '38:15',
-    timeListened: 2295,
-  },
-  {
-    id: '4',
-    trackId: 'audio4',
-    title: 'Hadith Explanation - Sahih Al-Bukhari',
-    scholarName: 'Sheikh Saleh Al-Uthaymeen',
-    listenedAt: '2024-02-25',
-    duration: '41:00',
-    timeListened: 2460,
-  },
-  {
-    id: '5',
-    trackId: 'audio5',
-    title: 'Quran Memorization Tips',
-    scholarName: 'Ustadh Ibrahim Al-Akbar',
-    listenedAt: '2024-02-24',
-    duration: '25:30',
-    timeListened: 1530,
-  },
-];
-
-const MOCK_DOWNLOAD_HISTORY: DownloadHistory[] = [
-  {
-    id: '1',
-    contentId: 'audio1',
-    contentTitle: 'Daily Quran Recitation - Juz 1',
-    contentType: 'audio',
-    downloadedAt: '2024-02-28',
-    fileSize: '45 MB',
-  },
-  {
-    id: '2',
-    contentId: 'vid1',
-    contentTitle: 'Understanding the Quran - Surah Al-Fatiha',
-    contentType: 'video',
-    downloadedAt: '2024-02-27',
-    fileSize: '320 MB',
-  },
-  {
-    id: '3',
-    contentId: 'audio2',
-    contentTitle: 'Tafsir Al-Quran - Surah Al-Baqarah Part 1',
-    contentType: 'audio',
-    downloadedAt: '2024-02-26',
-    fileSize: '52 MB',
-  },
-  {
-    id: '4',
-    contentId: 'art1',
-    contentTitle: 'Islamic Jurisprudence Guide',
-    contentType: 'article',
-    downloadedAt: '2024-02-25',
-    fileSize: '2.5 MB',
-  },
-  {
-    id: '5',
-    contentId: 'audio3',
-    contentTitle: 'Islamic History Podcast - Early Caliphate',
-    contentType: 'audio',
-    downloadedAt: '2024-02-24',
-    fileSize: '38 MB',
-  },
-  {
-    id: '6',
-    contentId: 'vid2',
-    contentTitle: 'The Life of Prophet Muhammad',
-    contentType: 'video',
-    downloadedAt: '2024-02-23',
-    fileSize: '280 MB',
-  },
-  {
-    id: '7',
-    contentId: 'audio4',
-    contentTitle: 'Hadith Explanation - Sahih Al-Bukhari',
-    contentType: 'audio',
-    downloadedAt: '2024-02-22',
-    fileSize: '41 MB',
-  },
-];
-
-const MOCK_GALLERY_FAVORITES: GalleryImage[] = [
-  {
-    id: 'gal1',
-    imageURL: '/public/images/gallery-1.jpg',
-    thumbnailURL: '/public/images/gallery-1.jpg',
-    caption: 'Masjid Al-Haram - Mecca',
-    category: 'Islamic Sites',
-    favoriteCount: 1,
-  },
-  {
-    id: 'gal2',
-    imageURL: '/public/images/gallery-2.jpg',
-    thumbnailURL: '/public/images/gallery-2.jpg',
-    caption: 'Al-Masjid Al-Nabawi - Medina',
-    category: 'Islamic Sites',
-    favoriteCount: 1,
-  },
-  {
-    id: 'gal3',
-    imageURL: '/public/images/gallery-3.jpg',
-    thumbnailURL: '/public/images/gallery-3.jpg',
-    caption: 'Islamic Calligraphy Art',
-    category: 'Art',
-    favoriteCount: 1,
-  },
-];
-
 export const useUserContentStore = create<UserContentState>((set, get) => ({
-  // Donations
-  donations: MOCK_DONATIONS,
-  totalDonated: MOCK_DONATIONS.reduce((sum, d) => sum + d.amount, 0),
+  isLoading: false,
+  donations: [],
+  totalDonated: 0,
+  savedLectures: [],
+  galleryFavorites: [],
+  listeningHistory: [],
+  downloadHistory: [],
+  unsubscribers: [],
 
-  addDonation: (donation: Donation) =>
-    set((state) => ({
-      donations: [...state.donations, donation],
-      totalDonated: state.totalDonated + donation.amount,
-    })),
+  fetchDonations: (userId: string) => {
+    const q = query(collection(db, 'users', userId, 'donations'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const donations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Donation));
+      set({ 
+        donations, 
+        totalDonated: donations.reduce((sum, d) => sum + d.amount, 0) 
+      });
+    });
+    set(state => ({ unsubscribers: [...state.unsubscribers, unsub] }));
+  },
 
-  getDonations: () => get().donations,
+  addDonation: async (userId: string, donation: Omit<Donation, 'id'>) => {
+    await addDoc(collection(db, 'users', userId, 'donations'), {
+      ...donation,
+      createdAt: Timestamp.now()
+    });
+  },
 
-  getDonationTotal: () => get().totalDonated,
+  fetchSavedLectures: (userId: string) => {
+    const q = query(collection(db, 'users', userId, 'savedLectures'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const savedLectures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedLecture));
+      set({ savedLectures });
+    });
+    set(state => ({ unsubscribers: [...state.unsubscribers, unsub] }));
+  },
 
-  // Saved Lectures
-  savedLectures: MOCK_SAVED_LECTURES,
+  addSavedLecture: async (userId: string, lecture: Omit<SavedLecture, 'id'>) => {
+    await addDoc(collection(db, 'users', userId, 'savedLectures'), {
+      ...lecture,
+      createdAt: Timestamp.now()
+    });
+  },
 
-  addSavedLecture: (lecture: SavedLecture) =>
-    set((state) => ({
-      savedLectures: [...state.savedLectures, lecture],
-    })),
+  removeSavedLecture: async (userId: string, videoId: string) => {
+    const q = query(collection(db, 'users', userId, 'savedLectures'), where('videoId', '==', videoId));
+    const snapshot = await getDocs(q);
+    snapshot.forEach(async (document) => {
+      await deleteDoc(doc(db, 'users', userId, 'savedLectures', document.id));
+    });
+  },
 
-  removeSavedLecture: (videoId: string) =>
-    set((state) => ({
-      savedLectures: state.savedLectures.filter((l) => l.videoId !== videoId),
-    })),
+  isSavedLecture: (videoId: string) => {
+    return get().savedLectures.some((l) => l.videoId === videoId);
+  },
 
-  getSavedLectures: () => get().savedLectures,
+  fetchGalleryFavorites: (userId: string) => {
+    const q = query(collection(db, 'users', userId, 'galleryFavorites'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const galleryFavorites = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GalleryImage));
+      set({ galleryFavorites });
+    });
+    set(state => ({ unsubscribers: [...state.unsubscribers, unsub] }));
+  },
 
-  isSavedLecture: (videoId: string) =>
-    get().savedLectures.some((l) => l.videoId === videoId),
+  addGalleryFavorite: async (userId: string, image: GalleryImage) => {
+    await addDoc(collection(db, 'users', userId, 'galleryFavorites'), {
+      ...image,
+      createdAt: Timestamp.now()
+    });
+  },
 
-  // Gallery Favorites
-  galleryFavorites: MOCK_GALLERY_FAVORITES,
+  removeGalleryFavorite: async (userId: string, imageId: string) => {
+    const q = query(collection(db, 'users', userId, 'galleryFavorites'), where('id', '==', imageId));
+    const snapshot = await getDocs(q);
+    snapshot.forEach(async (document) => {
+      await deleteDoc(doc(db, 'users', userId, 'galleryFavorites', document.id));
+    });
+  },
 
-  addGalleryFavorite: (image: GalleryImage) =>
-    set((state) => ({
-      galleryFavorites: [...state.galleryFavorites, image],
-    })),
+  isGalleryFavorite: (imageId: string) => {
+    return get().galleryFavorites.some((g) => g.id === imageId);
+  },
 
-  removeGalleryFavorite: (imageId: string) =>
-    set((state) => ({
-      galleryFavorites: state.galleryFavorites.filter((g) => g.id !== imageId),
-    })),
+  fetchListeningHistory: (userId: string) => {
+    const q = query(collection(db, 'users', userId, 'listeningHistory'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const listeningHistory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ListeningHistory));
+      set({ listeningHistory });
+    });
+    set(state => ({ unsubscribers: [...state.unsubscribers, unsub] }));
+  },
 
-  getGalleryFavorites: () => get().galleryFavorites,
+  addListeningHistory: async (userId: string, history: Omit<ListeningHistory, 'id'>) => {
+    await addDoc(collection(db, 'users', userId, 'listeningHistory'), {
+      ...history,
+      createdAt: Timestamp.now()
+    });
+  },
 
-  isGalleryFavorite: (imageId: string) =>
-    get().galleryFavorites.some((g) => g.id === imageId),
+  getTotalListeningTime: () => {
+    return get().listeningHistory.reduce((sum, h) => sum + h.timeListened, 0);
+  },
 
-  // Listening History
-  listeningHistory: MOCK_LISTENING_HISTORY,
+  fetchDownloadHistory: (userId: string) => {
+    const q = query(collection(db, 'users', userId, 'downloadHistory'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const downloadHistory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DownloadHistory));
+      set({ downloadHistory });
+    });
+    set(state => ({ unsubscribers: [...state.unsubscribers, unsub] }));
+  },
 
-  addListeningHistory: (history: ListeningHistory) =>
-    set((state) => ({
-      listeningHistory: [history, ...state.listeningHistory],
-    })),
+  addDownloadHistory: async (userId: string, download: Omit<DownloadHistory, 'id'>) => {
+    await addDoc(collection(db, 'users', userId, 'downloadHistory'), {
+      ...download,
+      createdAt: Timestamp.now()
+    });
+  },
 
-  getListeningHistory: () => get().listeningHistory,
-
-  getTotalListeningTime: () =>
-    get().listeningHistory.reduce((sum, h) => sum + h.timeListened, 0),
-
-  // Download History
-  downloadHistory: MOCK_DOWNLOAD_HISTORY,
-
-  addDownloadHistory: (download: DownloadHistory) =>
-    set((state) => ({
-      downloadHistory: [download, ...state.downloadHistory],
-    })),
-
-  getDownloadHistory: () => get().downloadHistory,
-
-  // Reset on logout
-  resetUserContent: () =>
+  resetUserContent: () => {
+    // Unsubscribe from all Firestore listeners
+    get().unsubscribers.forEach(unsub => unsub());
+    
     set({
       donations: [],
       totalDonated: 0,
@@ -376,5 +225,8 @@ export const useUserContentStore = create<UserContentState>((set, get) => ({
       galleryFavorites: [],
       listeningHistory: [],
       downloadHistory: [],
-    }),
+      unsubscribers: [],
+      isLoading: false
+    });
+  },
 }));

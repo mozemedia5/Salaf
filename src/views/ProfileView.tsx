@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   PlayCircle, Image, Heart, Clock, Download,
@@ -36,9 +36,27 @@ export function ProfileView() {
     savedLectures, 
     downloadHistory, 
     galleryFavorites,
-    getDonationTotal,
-    getTotalListeningTime
+    totalDonated,
+    getTotalListeningTime,
+    fetchDonations,
+    fetchSavedLectures,
+    fetchGalleryFavorites,
+    fetchListeningHistory,
+    fetchDownloadHistory,
+    resetUserContent
   } = useUserContentStore();
+
+  useEffect(() => {
+    if (user) {
+      fetchDonations(user.uid);
+      fetchSavedLectures(user.uid);
+      fetchGalleryFavorites(user.uid);
+      fetchListeningHistory(user.uid);
+      fetchDownloadHistory(user.uid);
+    } else {
+      resetUserContent();
+    }
+  }, [user]);
   const [notifications, setNotifications] = useState(true);
   
   const [isEditModalOpen, setEditModalOpen] = useState(false);
@@ -114,7 +132,7 @@ export function ProfileView() {
     {
       title: 'Activity',
       items: [
-        { icon: Heart, label: 'Donation History', value: `$${getDonationTotal()}`, action: handleDonationHistoryClick },
+        { icon: Heart, label: 'Donation History', value: `$${totalDonated}`, action: handleDonationHistoryClick },
         { icon: Clock, label: 'Listening History', value: formatTime(getTotalListeningTime()), action: handleListeningHistoryClick },
         { icon: Download, label: 'Downloads', value: `${downloadHistory.length}`, action: () => navigateTo('audio' as any) },
       ],
@@ -173,7 +191,7 @@ export function ProfileView() {
           {[
             { num: `${galleryFavorites.length}`, label: 'Favorites' },
             { num: formatTime(getTotalListeningTime()), label: 'Listened' },
-            { num: `$${getDonationTotal()}`, label: 'Donated' },
+            { num: `$${totalDonated}`, label: 'Donated' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}

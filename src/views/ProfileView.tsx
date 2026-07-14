@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   PlayCircle, BookOpen, Headphones, Image, Heart, Clock, Download,
   Bell, Moon, Globe, Type, Wifi, User, Lock, Shield, FileText,
-  HelpCircle, LogOut, ChevronRight, UserCheck
+  HelpCircle, LogOut, ChevronRight, UserCheck, LayoutPanelTop
 } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { useNavigationStore } from '@/stores/navigationStore';
@@ -56,6 +56,12 @@ export function ProfileView() {
         { icon: Shield, label: 'Privacy Policy' },
         { icon: FileText, label: 'Terms of Service' },
         { icon: HelpCircle, label: 'Help & Support' },
+      ],
+    },
+    {
+      title: 'Supreme Admin',
+      items: [
+        { icon: LayoutPanelTop, label: 'Banner Management', action: () => alert('Banner management is restricted to Supreme Admin. Back-end handling required.') },
       ],
     },
   ];

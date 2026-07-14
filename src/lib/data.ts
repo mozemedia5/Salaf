@@ -1,4 +1,4 @@
-import type { Video, AudioTrack, Article, GalleryImage, Campaign, Scholar, Notification } from '@/types';
+import type { Video, AudioTrack, Article, GalleryImage, Campaign, Scholar, Notification, Banner } from '@/types';
 
 export const CATEGORIES = [
   'All', 'Quran', 'Hadith', 'Fiqh', 'Seerah', 'Aqeedah', 'Dua', 'Ramadan', 'Youth', 'Sisters'
@@ -76,3 +76,11 @@ export const DAILY_VERSE = {
   translation: 'Allah - there is no deity except Him, the Ever-Living, the Sustainer of [all] existence. Neither drowsiness overtakes Him nor sleep.',
   reference: 'Surah Al-Baqarah, 2:255',
 };
+
+export const BANNERS: Banner[] = [
+  { id: '1', title: 'Quran Studies', imageURL: '/images/banner-quran.jpg', category: 'Quran' },
+  { id: '2', title: 'Hadith & Sunnah', imageURL: '/images/banner-hadith.jpg', category: 'Hadith' },
+  { id: '3', title: 'Aqidah & Tawheed', imageURL: '/images/banner-aqidah.jpg', category: 'Aqeedah' },
+  { id: '4', title: 'Islamic History', imageURL: '/images/banner-history.jpg', category: 'Seerah' },
+  { id: '5', title: 'Family & Character', imageURL: '/images/banner-family.jpg', category: 'Youth' },
+];

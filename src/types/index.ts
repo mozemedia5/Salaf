@@ -76,6 +76,14 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface Banner {
+  id: string;
+  title: string;
+  imageURL: string;
+  category: string;
+  link?: string;
+}
+
 export type TabId = 'home' | 'videos' | 'audio' | 'donate' | 'profile';
 
 export type ViewId = TabId | 'articles' | 'gallery' | 'search' | 'notifications' | 'article-detail' | 'video-player' | 'audio-player';

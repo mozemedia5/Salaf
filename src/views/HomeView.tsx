@@ -9,7 +9,7 @@ import { AudioCard } from '@/components/cards/AudioCard';
 import { ArticleCard } from '@/components/cards/ArticleCard';
 import { CampaignCard } from '@/components/cards/CampaignCard';
 import { useNavigationStore } from '@/stores/navigationStore';
-import { CATEGORIES, VIDEOS, AUDIO_TRACKS, ARTICLES, CAMPAIGNS, GALLERY_IMAGES, DAILY_REMINDER, DAILY_VERSE } from '@/lib/data';
+import { CATEGORIES, VIDEOS, AUDIO_TRACKS, ARTICLES, CAMPAIGNS, GALLERY_IMAGES, DAILY_REMINDER, DAILY_VERSE, BANNERS } from '@/lib/data';
 import { useState } from 'react';
 
 const QUICK_ACTIONS = [
@@ -49,7 +49,7 @@ export function HomeView() {
             transition={{ delay: 0.3 }}
             className="font-heading font-bold text-2xl mt-1 text-gradient-emerald"
           >
-            Welcome to Noor
+            Welcome to Manhaji Salaf
           </motion.h1>
         </div>
 
@@ -238,10 +238,44 @@ export function HomeView() {
         </ScrollReveal>
       </div>
 
+      {/* Admin Banners Section */}
+      <div className="mt-8">
+        <div className="px-4 mb-3 flex justify-between items-end">
+          <h2 className="font-heading font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Featured Highlights</h2>
+          <span className="text-[10px] text-emerald-500 font-medium bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">Admin Uploaded</span>
+        </div>
+        <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
+          {BANNERS.map((banner) => (
+            <div key={banner.id} className="w-[280px] flex-shrink-0 snap-start">
+              <ScrollReveal>
+                <GlassCard className="p-0 overflow-hidden cursor-pointer group">
+                  <div className="relative aspect-[16/9]">
+                    <img 
+                      src={banner.imageURL} 
+                      alt={banner.title} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wider">
+                        {banner.category}
+                      </span>
+                      <h3 className="text-white font-heading font-semibold mt-1 text-sm line-clamp-1">
+                        {banner.title}
+                      </h3>
+                    </div>
+                  </div>
+                </GlassCard>
+              </ScrollReveal>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="mt-10 pb-8 text-center">
         <div className="h-px mx-8 mb-6" style={{ background: 'var(--border-color)' }} />
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Noor Platform</p>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Manhaji Salaf Platform</p>
         <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Made with love for the Ummah</p>
       </div>
     </div>

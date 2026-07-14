@@ -1,6 +1,6 @@
-# Salaf - Noor Platform
+# Manhaji Salaf Platform
 
-Salaf is a sophisticated, modern web application built on the **Noor Platform**, designed to provide a seamless experience for accessing Islamic content, including articles, audio lectures, videos, and donation campaigns. Built with **React 19**, **TypeScript**, and **Vite**, it leverages a glassmorphism design language and smooth animations to deliver a "pretty cool" and spiritually uplifting user interface.
+Salaf is a sophisticated, modern web application built as the **Manhaji Salaf Platform**, designed to provide a seamless experience for accessing Islamic content, including articles, audio lectures, videos, and donation campaigns. Built with **React 19**, **TypeScript**, and **Vite**, it leverages a glassmorphism design language and smooth animations to deliver a "pretty cool" and spiritually uplifting user interface.
 
 ## ✨ Features
 

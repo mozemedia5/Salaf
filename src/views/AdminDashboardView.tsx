@@ -38,13 +38,37 @@ export function AdminDashboardView() {
   const { currentSection, setSection } = useAdminStore();
   const { navigateTo } = useNavigationStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showLoginForm, setShowLoginForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
   const { login } = useAdminAuth();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setLoginError('Please enter email and password');
+      return;
+    }
+    setLoggingIn(true);
+    setLoginError('');
+    try {
+      await login(email, password);
+    } catch (error: any) {
+      setLoginError(error.message || 'Login failed');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigateTo('home');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   if (loading) {
     return (

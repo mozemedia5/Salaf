@@ -1,7 +1,6 @@
 import { Search, Bell, ArrowLeft, Moon, Sun } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { InstallButton } from '@/components/InstallButton';
 import type { ViewId } from '@/types';
 
 const VIEW_TITLES: Record<ViewId, string> = {
@@ -26,7 +25,7 @@ const VIEW_TITLES: Record<ViewId, string> = {
 const SHOW_BACK: ViewId[] = ['article-detail', 'video-player', 'audio-player', 'notifications', 'search', 'privacy-policy', 'terms-of-service', 'user-questions'];
 
 export function AppHeader() {
-  const { currentView, navigateTo, goBack, toggleSearch, unreadNotifications } = useNavigationStore();
+  const { currentView, navigateTo, goBack, toggleSearch } = useNavigationStore();
   const { theme, toggleTheme } = useThemeStore();
   const title = VIEW_TITLES[currentView] || '';
   const showBack = SHOW_BACK.includes(currentView);
@@ -62,7 +61,6 @@ export function AppHeader() {
         )}
       </div>
       <div className="flex items-center gap-1">
-        <InstallButton />
         <button
           onClick={toggleSearch}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"

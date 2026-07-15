@@ -1,6 +1,7 @@
 import { Search, Bell, ArrowLeft, Moon, Sun } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useThemeStore } from '@/stores/themeStore';
+import { InstallButton } from '@/components/InstallButton';
 import type { ViewId } from '@/types';
 
 const VIEW_TITLES: Record<ViewId, string> = {
@@ -61,6 +62,7 @@ export function AppHeader() {
         )}
       </div>
       <div className="flex items-center gap-1">
+        <InstallButton />
         <button
           onClick={toggleSearch}
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
@@ -72,11 +74,6 @@ export function AppHeader() {
           className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
         >
           <Bell className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
-          {unreadNotifications > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white font-semibold flex items-center justify-center animate-pulse">
-              {unreadNotifications}
-            </span>
-          )}
         </button>
       </div>
     </header>

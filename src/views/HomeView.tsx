@@ -10,6 +10,7 @@ import { AudioCard } from '@/components/cards/AudioCard';
 import { ArticleCard } from '@/components/cards/ArticleCard';
 import { CampaignCard } from '@/components/cards/CampaignCard';
 import { VideoPlayer } from '@/components/video/VideoPlayer';
+import { InstallButton } from '@/components/InstallButton';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useVideoStore } from '@/stores/videoStore';
 import { collection, query, onSnapshot, limit } from 'firebase/firestore';
@@ -74,12 +75,18 @@ export function HomeView() {
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/50 to-transparent dark:from-emerald-900/10 pointer-events-none" />
 
         <div className="relative text-center">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="flex justify-center mb-4">
+            <img src="/icons/icon-192x192.png" alt="Salaf" className="w-20 h-20 rounded-3xl shadow-lg" />
+          </motion.div>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="font-arabic text-lg italic" style={{ color: 'var(--text-secondary)' }}>
             Assalamu Alaikum
           </motion.p>
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="font-heading font-bold text-2xl mt-1 text-gradient-emerald">
             Welcome to Manhaji Salaf
           </motion.h1>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-4 flex justify-center">
+            <InstallButton />
+          </motion.div>
         </div>
 
         {/* Daily Reminder */}

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAuth } from '@/hooks/useAuth';
+import { InstallButton } from '@/components/InstallButton';
 
 export function AuthModal() {
   const { closeAuthModal, authScreen, setAuthScreen } = useNavigationStore();
@@ -99,8 +100,12 @@ export function AuthModal() {
           <X className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
         </button>
 
-        <div className="flex justify-center mb-6">
-          <img src="/svg/noor-logo.svg" alt="Noor" className="h-16 w-auto" />
+        <div className="flex flex-col items-center gap-4 mb-6">
+          <img src="/icons/icon-192x192.png" alt="Salaf" className="w-16 h-16 rounded-3xl shadow-lg" />
+          <div className="flex justify-center gap-2">
+            <img src="/svg/noor-logo.svg" alt="Noor" className="h-6 w-auto opacity-70" />
+            <InstallButton />
+          </div>
         </div>
 
         <AnimatePresence mode="wait">

@@ -1,5 +1,6 @@
 import { Home, PlayCircle, Headphones, Heart, User } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
+import { AppLogo } from '@/components/AppLogo';
 import { cn } from '@/lib/utils';
 import type { TabId } from '@/types';
 
@@ -29,6 +30,7 @@ export function BottomNav() {
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
+          const isHomeTab = tab.id === 'home';
           return (
             <button
               key={tab.id}
@@ -38,13 +40,17 @@ export function BottomNav() {
               {isActive && (
                 <span className="absolute -top-0.5 w-8 h-0.5 rounded-full bg-emerald-500" />
               )}
-              <Icon
-                className={cn(
-                  'w-6 h-6 transition-all duration-200',
-                  isActive ? 'text-emerald-500' : 'text-gray-400 dark:text-gray-500'
-                )}
-                strokeWidth={isActive ? 2.5 : 1.5}
-              />
+              {isHomeTab ? (
+                <AppLogo size={isActive ? 'sm' : 'xs'} className={cn('transition-all duration-200', isActive ? 'ring-2 ring-emerald-500' : 'opacity-60')} />
+              ) : (
+                <Icon
+                  className={cn(
+                    'w-6 h-6 transition-all duration-200',
+                    isActive ? 'text-emerald-500' : 'text-gray-400 dark:text-gray-500'
+                  )}
+                  strokeWidth={isActive ? 2.5 : 1.5}
+                />
+              )}
               <span
                 className={cn(
                   'text-[10px] font-medium transition-colors duration-200',

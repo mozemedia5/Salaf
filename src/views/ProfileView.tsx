@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
+import { AppLogo } from '@/components/AppLogo';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -369,6 +370,9 @@ export function ProfileView() {
     <div className="pb-4">
       {/* Profile Header */}
       <ScrollReveal className="px-4 pt-4 pb-6 text-center">
+        <div className="flex justify-center mb-4">
+          <AppLogo size="lg" />
+        </div>
         <div className="relative inline-block">
           <div className="w-24 h-24 rounded-full border-[3px] border-emerald-500 overflow-hidden shadow-lg mx-auto bg-gray-100 dark:bg-gray-800">
             <div className="w-full h-full flex items-center justify-center">

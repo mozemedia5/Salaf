@@ -1,4 +1,4 @@
-import { Clock, Bookmark } from 'lucide-react';
+import { Clock, Bookmark, User } from 'lucide-react';
 import { GlassCard } from '@/components/ui-custom/GlassCard';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { cn } from '@/lib/utils';
@@ -56,10 +56,18 @@ export function ArticleCard({ article, compact = false, className }: ArticleCard
           {article.title}
         </h3>
         <p className="text-sm mt-2 line-clamp-3" style={{ color: 'var(--text-muted)' }}>{article.excerpt}</p>
-        <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{article.readingTime} read</span>
+        <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{article.readingTime} read</span>
+            </div>
+            {article.createdBy && (
+              <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <User className="w-3 h-3" />
+                <span className="line-clamp-1">by {article.createdBy}</span>
+              </div>
+            )}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); setBookmarked(!bookmarked); }}

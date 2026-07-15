@@ -52,6 +52,7 @@ export interface Article {
   category: string;
   readingTime: string;
   createdAt: string;
+  createdBy?: string;
   tags?: string[];
   evidences?: string[];
   links?: { title: string; url: string }[];

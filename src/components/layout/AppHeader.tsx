@@ -57,7 +57,10 @@ export function AppHeader() {
             {title}
           </h1>
         ) : (
-          <img src="/svg/noor-logo.svg" alt="Noor" className="h-7 w-auto" style={{ color: '#10B981' }} />
+          <div className="flex items-center gap-2">
+            <img src="/salaf-logo.png" alt="Salaf" className="w-8 h-8 rounded-lg" />
+            <span className="font-heading font-bold text-base" style={{ color: 'var(--text-primary)' }}>Salaf.com</span>
+          </div>
         )}
       </div>
       <div className="flex items-center gap-1">

@@ -3,6 +3,7 @@ import { BottomNav } from './BottomNav';
 import { MiniPlayer } from '@/components/audio/MiniPlayer';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { SearchOverlay } from '@/components/search/SearchOverlay';
+import { PWABanner } from '@/components/PWABanner';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,7 @@ export function AppShell({ children }: AppShellProps) {
       {isMiniPlayerVisible && <MiniPlayer />}
       {isAuthModalOpen && <AuthModal />}
       {isSearchOpen && <SearchOverlay />}
+      <PWABanner />
     </div>
   );
 }

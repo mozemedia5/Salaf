@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Analytics } from '@vercel/analytics/react';
 import { AppShell } from '@/components/layout/AppShell';
+import { SEO, StructuredData } from '@/components/SEO';
 import { FullAudioPlayer } from '@/components/audio/FullAudioPlayer';
 import { HomeView } from '@/views/HomeView';
 import { VideosView } from '@/views/VideosView';
@@ -61,21 +62,25 @@ function App() {
   };
 
   return (
-    <AppShell>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentView}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-        >
-          {renderView()}
-        </motion.div>
-      </AnimatePresence>
-      <FullAudioPlayer />
-      <Analytics />
-    </AppShell>
+    <>
+      <SEO />
+      <StructuredData />
+      <AppShell>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            {renderView()}
+          </motion.div>
+        </AnimatePresence>
+        <FullAudioPlayer />
+        <Analytics />
+      </AppShell>
+    </>
   );
 }
 

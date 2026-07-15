@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /admin-dashboard
+Disallow: /profile
+Disallow: /favorites
+Allow: /icons/
+Allow: /manifest.json
+
+Sitemap: https://salaf.com/sitemap.xml
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin-dashboard
+Disallow: /profile
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin-dashboard
+Disallow: /profile

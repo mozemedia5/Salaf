@@ -73,7 +73,44 @@ export function HomeView() {
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url(/images/divider-pattern.jpg)', backgroundSize: '300px' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/50 to-transparent dark:from-emerald-900/10 pointer-events-none" />
 
+        {/* Admin Banners Section - Moved to Top */}
+        {banners.length > 0 && (
+          <div className="mb-6 -mx-4">
+            <div className="px-4 mb-3 flex justify-between items-end">
+              <h2 className="font-heading font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Featured Highlights</h2>
+              <span className="text-[10px] text-emerald-500 font-medium bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">Admin Uploaded</span>
+            </div>
+            <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
+              {banners.map((banner) => (
+                <div key={banner.id} className="w-[280px] flex-shrink-0 snap-start">
+                  <ScrollReveal>
+                    <GlassCard className="p-0 overflow-hidden cursor-pointer group relative">
+                      <div className="relative aspect-[16/9]" onClick={() => handleBannerClick(banner)}>
+                        <img src={banner.imageURL} alt={banner.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wider">{banner.category}</span>
+                          <h3 className="text-white font-heading font-semibold mt-1 text-sm line-clamp-1">{banner.title}</h3>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedBanner(banner); }}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors"
+                      >
+                        <MoreVertical className="w-4 h-4 text-white" />
+                      </button>
+                    </GlassCard>
+                  </ScrollReveal>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="relative text-center">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="flex justify-center mb-4">
+            <img src="/icons/icon-192x192.png" alt="Salaf" className="w-20 h-20 rounded-3xl shadow-lg" />
+          </motion.div>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="font-arabic text-lg italic" style={{ color: 'var(--text-secondary)' }}>
             Assalamu Alaikum
           </motion.p>
@@ -243,40 +280,7 @@ export function HomeView() {
         </ScrollReveal>
       </div>
 
-      {/* Admin Banners Section */}
-      {banners.length > 0 && (
-        <div className="mt-8">
-          <div className="px-4 mb-3 flex justify-between items-end">
-            <h2 className="font-heading font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Featured Highlights</h2>
-            <span className="text-[10px] text-emerald-500 font-medium bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">Admin Uploaded</span>
-          </div>
-          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
-            {banners.map((banner) => (
-              <div key={banner.id} className="w-[280px] flex-shrink-0 snap-start">
-                <ScrollReveal>
-                  <GlassCard className="p-0 overflow-hidden cursor-pointer group relative">
-                    <div className="relative aspect-[16/9]" onClick={() => handleBannerClick(banner)}>
-                      <img src={banner.imageURL} alt={banner.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold uppercase tracking-wider">{banner.category}</span>
-                        <h3 className="text-white font-heading font-semibold mt-1 text-sm line-clamp-1">{banner.title}</h3>
-                      </div>
-                    </div>
-                    {/* Vertical ... button for details */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedBanner(banner); }}
-                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors"
-                    >
-                      <MoreVertical className="w-4 h-4 text-white" />
-                    </button>
-                  </GlassCard>
-                </ScrollReveal>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Footer */}
       <div className="mt-10 pb-8 text-center">

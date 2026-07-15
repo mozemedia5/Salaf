@@ -1,9 +1,11 @@
-import { Home, PlayCircle, Headphones, Heart, User } from 'lucide-react';
+import { Home, PlayCircle, Headphones, Heart, User, Settings } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { AppLogo } from '@/components/AppLogo';
 import { cn } from '@/lib/utils';
 import type { TabId } from '@/types';
 
-const TABS: { id: TabId; label: string; icon: typeof Home }[] = [
+const BASE_TABS: { id: TabId; label: string; icon: typeof Home }[] = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'videos', label: 'Videos', icon: PlayCircle },
   { id: 'audio', label: 'Audio', icon: Headphones },
@@ -13,6 +15,15 @@ const TABS: { id: TabId; label: string; icon: typeof Home }[] = [
 
 export function BottomNav() {
   const { activeTab, setActiveTab, isMiniPlayerVisible } = useNavigationStore();
+  const { isAdmin } = useAdminAuth();
+  
+  const TABS = isAdmin 
+    ? [
+        ...BASE_TABS.slice(0, -1),
+        { id: 'admin-dashboard' as TabId, label: 'Admin', icon: Settings },
+        BASE_TABS[BASE_TABS.length - 1],
+      ]
+    : BASE_TABS;
 
   return (
     <nav
@@ -29,6 +40,7 @@ export function BottomNav() {
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
+          const isHomeTab = tab.id === 'home';
           return (
             <button
               key={tab.id}
@@ -38,13 +50,17 @@ export function BottomNav() {
               {isActive && (
                 <span className="absolute -top-0.5 w-8 h-0.5 rounded-full bg-emerald-500" />
               )}
-              <Icon
-                className={cn(
-                  'w-6 h-6 transition-all duration-200',
-                  isActive ? 'text-emerald-500' : 'text-gray-400 dark:text-gray-500'
-                )}
-                strokeWidth={isActive ? 2.5 : 1.5}
-              />
+              {isHomeTab ? (
+                <AppLogo size={isActive ? 'sm' : 'xs'} className={cn('transition-all duration-200', isActive ? 'ring-2 ring-emerald-500' : 'opacity-60')} />
+              ) : (
+                <Icon
+                  className={cn(
+                    'w-6 h-6 transition-all duration-200',
+                    isActive ? 'text-emerald-500' : 'text-gray-400 dark:text-gray-500'
+                  )}
+                  strokeWidth={isActive ? 2.5 : 1.5}
+                />
+              )}
               <span
                 className={cn(
                   'text-[10px] font-medium transition-colors duration-200',

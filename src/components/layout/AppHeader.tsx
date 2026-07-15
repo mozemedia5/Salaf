@@ -25,7 +25,7 @@ const VIEW_TITLES: Record<ViewId, string> = {
 const SHOW_BACK: ViewId[] = ['article-detail', 'video-player', 'audio-player', 'notifications', 'search', 'privacy-policy', 'terms-of-service', 'user-questions'];
 
 export function AppHeader() {
-  const { currentView, navigateTo, goBack, toggleSearch, unreadNotifications } = useNavigationStore();
+  const { currentView, navigateTo, goBack, toggleSearch } = useNavigationStore();
   const { theme, toggleTheme } = useThemeStore();
   const title = VIEW_TITLES[currentView] || '';
   const showBack = SHOW_BACK.includes(currentView);
@@ -57,7 +57,10 @@ export function AppHeader() {
             {title}
           </h1>
         ) : (
-          <img src="/svg/noor-logo.svg" alt="Noor" className="h-7 w-auto" style={{ color: '#10B981' }} />
+          <div className="flex items-center gap-2">
+            <img src="/salaf-logo.png" alt="Salaf" className="w-8 h-8 rounded-lg" />
+            <span className="font-heading font-bold text-base" style={{ color: 'var(--text-primary)' }}>Salaf.com</span>
+          </div>
         )}
       </div>
       <div className="flex items-center gap-1">
@@ -72,11 +75,6 @@ export function AppHeader() {
           className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
         >
           <Bell className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
-          {unreadNotifications > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white font-semibold flex items-center justify-center animate-pulse">
-              {unreadNotifications}
-            </span>
-          )}
         </button>
       </div>
     </header>

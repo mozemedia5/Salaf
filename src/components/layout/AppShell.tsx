@@ -17,20 +17,22 @@ export function AppShell({ children }: AppShellProps) {
   const showNav = tabViews.includes(currentView);
 
   return (
-    <div className="min-h-screen relative" style={{ background: 'var(--bg-primary)' }}>
-      <AppHeader />
-      <main
-        className={cn(
-          'pt-14 transition-all',
-          showNav && (isMiniPlayerVisible ? 'pb-32' : 'pb-16')
-        )}
-      >
-        {children}
-      </main>
-      {showNav && <BottomNav />}
-      {isMiniPlayerVisible && <MiniPlayer />}
-      {isAuthModalOpen && <AuthModal />}
-      {isSearchOpen && <SearchOverlay />}
+    <div className="min-h-screen relative flex flex-col items-center" style={{ background: 'var(--bg-primary)' }}>
+      <div className="w-full max-w-2xl bg-white dark:bg-black min-h-screen shadow-2xl relative flex flex-col">
+        <AppHeader />
+        <main
+          className={cn(
+            'pt-14 transition-all flex-1',
+            showNav && (isMiniPlayerVisible ? 'pb-32' : 'pb-16')
+          )}
+        >
+          {children}
+        </main>
+        {showNav && <BottomNav />}
+        {isMiniPlayerVisible && <MiniPlayer />}
+        {isAuthModalOpen && <AuthModal />}
+        {isSearchOpen && <SearchOverlay />}
+      </div>
     </div>
   );
 }

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Mail, Lock, User, Eye, EyeOff, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAuth } from '@/hooks/useAuth';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 export function AuthModal() {
   const { closeAuthModal, authScreen, setAuthScreen } = useNavigationStore();
   const { login, signup, loginWithGoogle, resetPassword, error: authError } = useAuth();
+  const { showInstall, handleInstallClick } = usePWAInstall();
   
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -99,8 +101,9 @@ export function AuthModal() {
           <X className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
         </button>
 
-        <div className="flex justify-center mb-6">
-          <img src="/svg/noor-logo.svg" alt="Noor" className="h-16 w-auto" />
+        <div className="flex flex-col items-center justify-center mb-6">
+          <img src="/icons/icon-512x512.png" alt="Salaf" className="h-20 w-20 rounded-2xl shadow-md mb-2" />
+          <span className="font-heading font-bold text-2xl text-emerald-600 dark:text-emerald-400">SALAF</span>
         </div>
 
         <AnimatePresence mode="wait">
@@ -124,7 +127,7 @@ export function AuthModal() {
             <motion.div key={authScreen} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h2 className="font-heading font-bold text-2xl text-center" style={{ color: 'var(--text-primary)' }}>
                 {authScreen === 'login' && 'Welcome Back'}
-                {authScreen === 'signup' && 'Join Noor'}
+                {authScreen === 'signup' && 'Join Salaf'}
                 {authScreen === 'forgot' && 'Reset Password'}
               </h2>
               <p className="text-sm text-center mt-1" style={{ color: 'var(--text-muted)' }}>
@@ -251,6 +254,16 @@ export function AuthModal() {
                       </button>
                     </div>
                   </>
+                )}
+
+                {showInstall && (
+                  <button
+                    onClick={handleInstallClick}
+                    className="w-full h-11 mt-2 rounded-xl border-2 border-dashed border-emerald-500/30 flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Install Salaf App
+                  </button>
                 )}
 
                 <p className="text-sm text-center mt-4" style={{ color: 'var(--text-muted)' }}>

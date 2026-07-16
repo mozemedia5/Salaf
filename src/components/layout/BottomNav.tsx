@@ -17,7 +17,7 @@ export function BottomNav() {
   return (
     <nav
       className={cn(
-        'fixed left-0 right-0 z-50 h-16 backdrop-blur-xl border-t transition-all duration-300',
+        'fixed left-0 right-0 z-50 h-16 backdrop-blur-xl border-t transition-all duration-300 flex justify-center',
         isMiniPlayerVisible ? 'bottom-16' : 'bottom-0'
       )}
       style={{
@@ -25,7 +25,7 @@ export function BottomNav() {
         borderColor: 'var(--border-color)',
       }}
     >
-      <div className="flex items-center justify-around h-full px-2 pb-safe">
+      <div className="flex items-center justify-around h-full px-2 pb-safe w-full max-w-2xl">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;

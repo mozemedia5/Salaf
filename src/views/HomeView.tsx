@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, BookOpen, Hand, Clock, Compass, MoreVertical, ExternalLink, X } from 'lucide-react';
+import { Play, BookOpen, Hand, Clock, Compass, MoreVertical, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';
@@ -12,6 +12,7 @@ import { CampaignCard } from '@/components/cards/CampaignCard';
 import { VideoPlayer } from '@/components/video/VideoPlayer';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useVideoStore } from '@/stores/videoStore';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { collection, query, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { CATEGORIES, AUDIO_TRACKS, ARTICLES, CAMPAIGNS, GALLERY_IMAGES, DAILY_REMINDER, DAILY_VERSE } from '@/lib/data';
@@ -27,6 +28,7 @@ const QUICK_ACTIONS = [
 export function HomeView() {
   const { navigateTo, setActiveTab } = useNavigationStore();
   const videoStore = useVideoStore();
+  const { showInstall, handleInstallClick } = usePWAInstall();
   const [activeCategory, setActiveCategory] = useState('All');
   const [videos, setVideos] = useState<Video[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -78,8 +80,20 @@ export function HomeView() {
             Assalamu Alaikum
           </motion.p>
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="font-heading font-bold text-2xl mt-1 text-gradient-emerald">
-            Welcome to Manhaji Salaf
+            Welcome to Salaf Platform
           </motion.h1>
+          
+          {showInstall && (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="mt-4">
+              <button
+                onClick={handleInstallClick}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-emerald-500/25 active:scale-95"
+              >
+                <Download className="w-4 h-4" />
+                Install Salaf App
+              </button>
+            </motion.div>
+          )}
         </div>
 
         {/* Daily Reminder */}
@@ -281,7 +295,7 @@ export function HomeView() {
       {/* Footer */}
       <div className="mt-10 pb-8 text-center">
         <div className="h-px mx-8 mb-6" style={{ background: 'var(--border-color)' }} />
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Manhaji Salaf Platform</p>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Salaf Platform</p>
         <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Made with love for the Ummah</p>
       </div>
 
@@ -293,20 +307,26 @@ export function HomeView() {
       {/* Banner Details Modal */}
       {selectedBanner && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50" onClick={() => setSelectedBanner(null)}>
-          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[380px] rounded-3xl p-5" style={{ background: 'var(--bg-secondary)', boxShadow: 'var(--shadow-lg)' }}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-heading font-bold" style={{ color: 'var(--text-primary)' }}>{selectedBanner.title}</h3>
-              <button onClick={() => setSelectedBanner(null)} className="p-1"><X className="w-5 h-5" style={{ color: 'var(--text-muted)' }} /></button>
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-2xl">
+            <div className="relative aspect-video">
+              <img src={selectedBanner.imageURL} alt={selectedBanner.title} className="w-full h-full object-cover" />
+              <button onClick={() => setSelectedBanner(null)} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white">
+                <MoreVertical className="w-4 h-4 rotate-90" />
+              </button>
             </div>
-            {selectedBanner.imageURL && <img src={selectedBanner.imageURL} alt="" className="w-full h-40 object-cover rounded-xl mb-3" />}
-            {selectedBanner.description && <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>{selectedBanner.description}</p>}
-            {selectedBanner.details && <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>{selectedBanner.details}</p>}
-            {selectedBanner.link && (
-              <a href={selectedBanner.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-emerald-500 hover:text-emerald-600">
-                <ExternalLink className="w-3 h-3" /> Visit Link
-              </a>
-            )}
+            <div className="p-6">
+              <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest">{selectedBanner.category}</span>
+              <h2 className="text-2xl font-heading font-bold mt-2" style={{ color: 'var(--text-primary)' }}>{selectedBanner.title}</h2>
+              <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{selectedBanner.description}</p>
+              {selectedBanner.link && (
+                <button
+                  onClick={() => handleBannerClick(selectedBanner)}
+                  className="w-full mt-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-600/20"
+                >
+                  Learn More
+                </button>
+              )}
+            </div>
           </motion.div>
         </div>
       )}

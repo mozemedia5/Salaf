@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isApproved == true;
+    }
+    
+    function isSuperAdmin() {
+      return isAdmin() && 
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Videos - anyone can read, only admins can write
+    match /videos/{videoId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Video Reviews - anyone can read, authenticated users can create
+    match /video_reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow delete: if isAdmin() || request.auth.uid == resource.data.userId;
+    }
+    
+    // Video Likes - authenticated users only
+    match /video_likes/{likeId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Articles - anyone can read, only admins can write
+    match /articles/{articleId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Gallery - anyone can read, only admins can write
+    match /gallery/{imageId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Campaigns/Donations - anyone can read, only admins can write
+    match /campaigns/{campaignId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Banners - anyone can read, only super admins can write
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow create, update, delete: if isSuperAdmin();
+    }
+    
+    // Questions - users can read their own, admins can read all
+    match /questions/{questionId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Notifications - anyone can read, only admins can create
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Admins collection - only super admins can manage
+    match /admins/{adminId} {
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == adminId || isAdmin());
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() || 
+        (request.auth.uid == adminId && 
+         request.resource.data.diff(resource.data).affectedKeys()
+         .hasOnly(['lastLoginAt']));
+      allow delete: if isSuperAdmin();
+    }
+    
+    // Admin invites - super admin only
+    match /admin_invites/{email} {
+      allow read, write: if isSuperAdmin();
+    }
+    
+    // User data (activities, saved videos, listening history)
+    match /users/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}

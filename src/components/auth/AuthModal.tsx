@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, Eye, EyeOff, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import { X, Mail, Lock, User, Eye, EyeOff, CheckCircle, AlertCircle, Download, Shield } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAuth } from '@/hooks/useAuth';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
@@ -19,6 +19,7 @@ export function AuthModal() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [loginMode, setLoginMode] = useState<'client' | 'admin'>('client'); // New state for login mode
 
   const getStrength = () => {
     let s = 0;
@@ -125,13 +126,42 @@ export function AuthModal() {
             </motion.div>
           ) : (
             <motion.div key={authScreen} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+              {/* Login Mode Toggle - Only show on login screen */}
+              {authScreen === 'login' && (
+                <div className="flex gap-2 mb-6">
+                  <button
+                    onClick={() => setLoginMode('client')}
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                      loginMode === 'client'
+                        ? 'gradient-emerald text-white'
+                        : 'border'
+                    }`}
+                    style={loginMode !== 'client' ? { borderColor: 'var(--border-color)', color: 'var(--text-muted)' } : {}}
+                  >
+                    Client
+                  </button>
+                  <button
+                    onClick={() => setLoginMode('admin')}
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                      loginMode === 'admin'
+                        ? 'gradient-emerald text-white'
+                        : 'border'
+                    }`}
+                    style={loginMode !== 'admin' ? { borderColor: 'var(--border-color)', color: 'var(--text-muted)' } : {}}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin
+                  </button>
+                </div>
+              )}
+
               <h2 className="font-heading font-bold text-2xl text-center" style={{ color: 'var(--text-primary)' }}>
-                {authScreen === 'login' && 'Welcome Back'}
+                {authScreen === 'login' && (loginMode === 'admin' ? 'Admin Login' : 'Welcome Back')}
                 {authScreen === 'signup' && 'Join Salaf'}
                 {authScreen === 'forgot' && 'Reset Password'}
               </h2>
               <p className="text-sm text-center mt-1" style={{ color: 'var(--text-muted)' }}>
-                {authScreen === 'login' && 'Sign in to continue your journey'}
+                {authScreen === 'login' && (loginMode === 'admin' ? 'Sign in to admin dashboard' : 'Sign in to continue your journey')}
                 {authScreen === 'signup' && 'Begin your journey of Islamic learning'}
                 {authScreen === 'forgot' && 'Enter your email to receive a reset link'}
               </p>
@@ -232,7 +262,7 @@ export function AuthModal() {
                   )}
                 </button>
 
-                {authScreen === 'login' && (
+                {authScreen === 'login' && loginMode === 'client' && (
                   <>
                     <div className="flex items-center gap-3 my-4">
                       <div className="flex-1 h-px" style={{ background: 'var(--border-color)' }} />

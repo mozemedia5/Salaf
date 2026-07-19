@@ -12,6 +12,17 @@
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js');
         });
+
+        // When a new service worker takes control (after an update),
+        // reload once so the user immediately gets the latest deployed
+        // build instead of being stuck on a stale cached shell. Guarded
+        // against reload loops with a session flag.
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
       }
     </script>
   </head>

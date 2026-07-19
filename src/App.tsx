@@ -18,10 +18,20 @@ import { AdminDashboardView } from '@/views/AdminDashboardView';
 import { UserQuestionsView } from '@/views/UserQuestionsView';
 import { useThemeStore } from '@/stores/themeStore';
 import { useNavigationStore } from '@/stores/navigationStore';
+import { useAuthStore } from '@/stores/authStore';
 
 function App() {
   const currentView = useNavigationStore((s) => s.currentView);
   const setTheme = useThemeStore((s) => s.setTheme);
+  const initAuth = useAuthStore((s) => s.initAuth);
+
+  useEffect(() => {
+    // Initialize the global auth listener once at the app root.
+    // This resolves the race condition where useAdminAuth hooks in child
+    // components each spin up their own onAuthStateChanged listener and
+    // the admin role is not ready in time.
+    initAuth();
+  }, [initAuth]);
 
   useEffect(() => {
     const saved = localStorage.getItem('noor-theme');

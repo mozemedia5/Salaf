@@ -1,192 +1,120 @@
-import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth';
+/**
+ * useAdminAuth
+ *
+ * A thin wrapper around the global authStore.
+ * All components that previously called useAdminAuth() still work without
+ * changes, but now they read from a single, already-initialized auth listener
+ * instead of each spinning up their own onAuthStateChanged() — which caused
+ * the race condition where the admin dashboard showed "Access Denied" on first
+ * load because the Firestore check hadn't resolved yet.
+ */
+import { useCallback } from 'react';
+import { doc, updateDoc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
+import { useAuthStore } from '@/stores/authStore';
 import type { AdminUser } from '@/types';
 
-// If the signed-in user has no `admins/{uid}` doc yet but was invited via
-// `admin_invites/{email}`, create their real admin doc from the invite so the
-// existing approval flow (AdminManagement.handleApprove) can find and approve
-// them. The invite stays pending (isApproved: false) until a super admin
-// approves the linked admins/{uid} doc.
-async function linkInviteIfPending(firebaseUser: User): Promise<void> {
-  const email = firebaseUser.email?.toLowerCase();
-  if (!email) return;
-
-  const inviteRef = doc(db, 'admin_invites', email);
-  const inviteSnap = await getDoc(inviteRef);
-  if (!inviteSnap.exists()) return;
-
-  const invite = inviteSnap.data();
-  const adminDocRef = doc(db, 'admins', firebaseUser.uid);
-
-  await setDoc(adminDocRef, {
-    email,
-    displayName: invite.displayName || firebaseUser.displayName || '',
-    role: invite.role || 'admin',
-    permissions: invite.permissions,
-    isApproved: false,
-    isEmailVerified: false,
-    createdAt: serverTimestamp(),
-    createdBy: invite.createdBy || null,
-  });
-}
-
 export function useAdminAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [adminProfile, setAdminProfile] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const {
+    user,
+    adminProfile,
+    loading,
+    role,
+    isApproved,
+  } = useAuthStore();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(true);
+  const isAdmin = useAuthStore((s) => s.isAdmin());
+  const isSuperAdmin = useAuthStore((s) => s.isSuperAdmin());
 
-      if (firebaseUser) {
-        try {
-          const adminDocRef = doc(db, 'admins', firebaseUser.uid);
-          let adminDoc = await getDoc(adminDocRef);
+  // Build a user-friendly error when not an admin
+  const error = (() => {
+    if (loading) return null;
+    if (!user) return null;
+    if (role === 'client') return null; // regular user, no error needed
+    if ((role === 'admin' || role === 'super_admin') && !isApproved) {
+      return 'Your admin account is pending approval by the supreme admin.';
+    }
+    return null;
+  })();
 
-          if (!adminDoc.exists()) {
-            // Try to self-link a pending invite into a real admins/{uid} doc.
-            try {
-              await linkInviteIfPending(firebaseUser);
-              adminDoc = await getDoc(adminDocRef);
-            } catch (linkErr) {
-              console.error('Admin invite linking failed:', linkErr);
-            }
-          }
-
-          if (adminDoc.exists()) {
-            const data = adminDoc.data() as AdminUser;
-            if (data.isApproved && data.role) {
-              setAdminProfile({ ...data, id: firebaseUser.uid });
-              setIsAdmin(true);
-              setIsSuperAdmin(data.role === 'super_admin');
-
-              // Update last login
-              await updateDoc(adminDocRef, {
-                lastLoginAt: serverTimestamp(),
-              });
-            } else {
-              setError('Your admin account is pending approval.');
-              setIsAdmin(false);
-              setIsSuperAdmin(false);
-            }
-          } else {
-            setIsAdmin(false);
-            setIsSuperAdmin(false);
-            setAdminProfile(null);
-          }
-        } catch (err: any) {
-          console.error('Admin auth error:', err);
-          setError(err.message);
-          setIsAdmin(false);
-          setIsSuperAdmin(false);
-        }
-      } else {
-        setAdminProfile(null);
-        setIsAdmin(false);
-        setIsSuperAdmin(false);
-      }
-
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
+  /**
+   * Admin-specific login: signs in via Firebase Auth, verifies the admins/{uid}
+   * document, and throws descriptive errors if the check fails.
+   * The authStore's onAuthStateChanged listener will then update all state.
+   */
   const login = async (email: string, password: string) => {
-    setError(null);
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
+    const result = await signInWithEmailAndPassword(auth, email, password);
 
-      // Check if user is an admin
-      const adminDocRef = doc(db, 'admins', result.user.uid);
-      const adminDoc = await getDoc(adminDocRef);
+    const adminDocRef = doc(db, 'admins', result.user.uid);
+    const adminDoc = await getDoc(adminDocRef);
 
-      if (!adminDoc.exists()) {
-        await signOut(auth);
-        throw new Error('You are not authorized as an admin.');
-      }
-
-      const data = adminDoc.data() as AdminUser;
-      if (!data.isApproved) {
-        await signOut(auth);
-        throw new Error('Your admin account is pending approval by the supreme admin.');
-      }
-
-      return result;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
+    if (!adminDoc.exists()) {
+      await signOut(auth);
+      throw new Error('You are not registered as an admin. Please use the Client login.');
     }
-  };
 
-  const createAdmin = async (
-    adminData: Omit<AdminUser, 'id' | 'createdAt' | 'permissions'> & { permissions?: Partial<AdminUser['permissions']> }
-  ) => {
-    setError(null);
-    try {
-      // Create a document in admins collection with pending status
-      const newAdminRef = doc(db, 'admin_invites', adminData.email.toLowerCase());
-
-      const defaultPermissions: AdminUser['permissions'] = {
-        canManageVideos: true,
-        canManageArticles: true,
-        canManageGallery: true,
-        canManageDonations: true,
-        canManageBanners: false,
-        canManageAdmins: false,
-        canManageNotifications: true,
-        canAnswerQuestions: true,
-      };
-
-      await setDoc(newAdminRef, {
-        ...adminData,
-        email: adminData.email.toLowerCase(),
-        permissions: { ...defaultPermissions, ...adminData.permissions },
-        isApproved: false,
-        createdAt: serverTimestamp(),
-        createdBy: user?.uid,
-      });
-
-      return true;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
+    const data = adminDoc.data() as AdminUser;
+    if (!data.isApproved) {
+      await signOut(auth);
+      throw new Error('Your admin account is pending approval by the supreme admin.');
     }
-  };
 
-  const approveAdmin = async (adminId: string) => {
-    try {
-      const adminRef = doc(db, 'admins', adminId);
-      await updateDoc(adminRef, {
-        isApproved: true,
-        isEmailVerified: true,
-        approvedAt: serverTimestamp(),
-        approvedBy: user?.uid,
-      });
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
+    return result;
   };
 
   const logout = async () => {
     await signOut(auth);
-    setAdminProfile(null);
-    setIsAdmin(false);
-    setIsSuperAdmin(false);
   };
 
-  const hasPermission = useCallback((permission: keyof AdminUser['permissions']) => {
-    if (isSuperAdmin) return true;
-    return adminProfile?.permissions[permission] ?? false;
-  }, [isSuperAdmin, adminProfile]);
+  const createAdmin = async (
+    adminData: Omit<AdminUser, 'id' | 'createdAt' | 'permissions'> & {
+      permissions?: Partial<AdminUser['permissions']>;
+    }
+  ) => {
+    const newAdminRef = doc(db, 'admin_invites', adminData.email.toLowerCase());
+
+    const defaultPermissions: AdminUser['permissions'] = {
+      canManageVideos: true,
+      canManageArticles: true,
+      canManageGallery: true,
+      canManageDonations: true,
+      canManageBanners: false,
+      canManageAdmins: false,
+      canManageNotifications: true,
+      canAnswerQuestions: true,
+    };
+
+    await setDoc(newAdminRef, {
+      ...adminData,
+      email: adminData.email.toLowerCase(),
+      permissions: { ...defaultPermissions, ...adminData.permissions },
+      isApproved: false,
+      createdAt: serverTimestamp(),
+      createdBy: user?.uid,
+    });
+
+    return true;
+  };
+
+  const approveAdmin = async (adminId: string) => {
+    const adminRef = doc(db, 'admins', adminId);
+    await updateDoc(adminRef, {
+      isApproved: true,
+      isEmailVerified: true,
+      approvedAt: serverTimestamp(),
+      approvedBy: user?.uid,
+    });
+  };
+
+  const hasPermission = useCallback(
+    (permission: keyof AdminUser['permissions']) => {
+      if (!isApproved) return false;
+      if (isSuperAdmin) return true;
+      return adminProfile?.permissions[permission] ?? false;
+    },
+    [isSuperAdmin, adminProfile, isApproved]
+  );
 
   return {
     user,

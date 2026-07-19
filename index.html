@@ -10,18 +10,29 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js');
+          navigator.serviceWorker.register('/sw.js')
+            .then((reg) => {
+              // Poll for updates every 60 seconds so long-lived tabs pick up
+              // new deploys without requiring a full manual refresh.
+              setInterval(() => reg.update(), 60000);
+            })
+            .catch((err) => console.warn('SW registration failed:', err));
         });
 
         // When a new service worker takes control (after an update),
-        // reload once so the user immediately gets the latest deployed
-        // build instead of being stuck on a stale cached shell. Guarded
-        // against reload loops with a session flag.
-        let refreshing = false;
+        // reload ONCE so the user gets the latest build.
+        // We guard with sessionStorage (survives soft-reloads but not tab
+        // close) to prevent infinite reload loops if the SW keeps cycling.
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (refreshing) return;
-          refreshing = true;
+          if (sessionStorage.getItem('sw-reloading')) return;
+          sessionStorage.setItem('sw-reloading', '1');
           window.location.reload();
+        });
+
+        // Clear the reload guard after the page has fully loaded so the
+        // next genuine update can trigger a reload normally.
+        window.addEventListener('load', () => {
+          sessionStorage.removeItem('sw-reloading');
         });
       }
     </script>

@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, Eye, EyeOff, CheckCircle, AlertCircle, Download, Shield } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 export function AuthModal() {
-  const { closeAuthModal, authScreen, setAuthScreen } = useNavigationStore();
-  const { login, signup, loginWithGoogle, resetPassword, error: authError } = useAuth();
+  const { closeAuthModal, authScreen, setAuthScreen, navigateTo } = useNavigationStore();
+  const { login: clientLogin, signup, loginWithGoogle, resetPassword, error: authError } = useAuth();
+  const { login: adminLogin } = useAdminAuth();
   const { showInstall, handleInstallClick } = usePWAInstall();
   
   const [showPassword, setShowPassword] = useState(false);
@@ -39,8 +41,16 @@ export function AuthModal() {
     setLoading(true);
     try {
       if (authScreen === 'login') {
-        await login(email, password);
-        closeAuthModal();
+        if (loginMode === 'admin') {
+          // Use admin-specific login which verifies the admins/{uid} document
+          await adminLogin(email, password);
+          closeAuthModal();
+          // Navigate to admin dashboard after successful admin login
+          navigateTo('admin-dashboard');
+        } else {
+          await clientLogin(email, password);
+          closeAuthModal();
+        }
       } else if (authScreen === 'signup') {
         if (!agreed) {
           setLocalError('You must agree to the terms');
@@ -78,7 +88,7 @@ export function AuthModal() {
     }
   };
 
-  const displayError = localError || authError;
+  const displayError = localError || authError || null;
 
   return (
     <motion.div

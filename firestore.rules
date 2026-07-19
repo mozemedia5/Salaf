@@ -1,115 +1,144 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
+
+    // ── Helper functions ───────────────────────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
+    // Read the caller's own admin doc (no Firestore read needed — uses the
+    // document that is already being matched in a write rule context, or a
+    // direct get() for non-matched contexts).
+    function callerAdminDoc() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
     function isAdmin() {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isApproved == true;
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && callerAdminDoc().data.isApproved == true
+        && callerAdminDoc().data.role != null;
     }
-    
+
     function isSuperAdmin() {
-      return isAdmin() && 
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'super_admin';
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && callerAdminDoc().data.isApproved == true
+        && callerAdminDoc().data.role == 'super_admin';
     }
-    
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Videos - anyone can read, only admins can write
+    // ── Videos ─────────────────────────────────────────────────────────────
     match /videos/{videoId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
-    
-    // Video Reviews - anyone can read, authenticated users can create
+
+    // ── Video Reviews ───────────────────────────────────────────────────────
     match /video_reviews/{reviewId} {
       allow read: if true;
       allow create: if isAuthenticated();
-      allow delete: if isAdmin() || request.auth.uid == resource.data.userId;
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.userId);
     }
-    
-    // Video Likes - authenticated users only
+
+    // ── Video Likes ─────────────────────────────────────────────────────────
     match /video_likes/{likeId} {
       allow read, write: if isAuthenticated();
     }
-    
-    // Articles - anyone can read, only admins can write
+
+    // ── Articles ────────────────────────────────────────────────────────────
     match /articles/{articleId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
-    
-    // Gallery - anyone can read, only admins can write
+
+    // ── Gallery ─────────────────────────────────────────────────────────────
     match /gallery/{imageId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
-    
-    // Campaigns/Donations - anyone can read, only admins can write
+
+    // ── Campaigns / Donations ───────────────────────────────────────────────
     match /campaigns/{campaignId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
-    
-    // Banners - anyone can read, only super admins can write
+
+    // ── Banners ─────────────────────────────────────────────────────────────
     match /banners/{bannerId} {
       allow read: if true;
       allow create, update, delete: if isSuperAdmin();
     }
-    
-    // Questions - users can read their own, admins can read all
+
+    // ── Questions ───────────────────────────────────────────────────────────
     match /questions/{questionId} {
-      allow read: if isAuthenticated() && 
+      allow read: if isAuthenticated() &&
         (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated();
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
-    
-    // Notifications - anyone can read, only admins can create
+
+    // ── Notifications ───────────────────────────────────────────────────────
     match /notifications/{notificationId} {
       allow read: if isAuthenticated();
       allow create: if isAdmin();
       allow delete: if isAdmin();
     }
-    
-    // Admins collection - only super admins can manage
+
+    // ── Admins collection ───────────────────────────────────────────────────
+    // Reads:
+    //   - Any authenticated user can read their OWN doc (self-read, no circular
+    //     dependency — required for the auth check on first login).
+    //   - Any approved admin can read OTHER admin docs.
+    // Writes:
+    //   - Super admins can create/update/delete any admin doc.
+    //   - A newly authenticated user may create their OWN pending doc when a
+    //     matching invite exists for their email.
+    //   - Any admin may update their own `lastLoginAt` field only.
     match /admins/{adminId} {
-      allow read: if isAuthenticated() && 
+      allow read: if isAuthenticated() &&
         (request.auth.uid == adminId || isAdmin());
-      // Super admins can create any admin doc. A newly signed-in user can also
-      // create their OWN admin doc (self-link) if a matching pending invite
-      // exists for their email, and only as an unapproved pending record.
+
       allow create: if isSuperAdmin() ||
-        (isAuthenticated() && request.auth.uid == adminId &&
-         request.auth.token.email != null &&
-         exists(/databases/$(database)/documents/admin_invites/$(request.auth.token.email.lower())) &&
-         request.resource.data.email == request.auth.token.email.lower() &&
-         request.resource.data.isApproved == false);
-      allow update: if isSuperAdmin() || 
-        (request.auth.uid == adminId && 
-         request.resource.data.diff(resource.data).affectedKeys()
-         .hasOnly(['lastLoginAt']));
+        (
+          isAuthenticated() &&
+          request.auth.uid == adminId &&
+          request.auth.token.email != null &&
+          exists(/databases/$(database)/documents/admin_invites/$(request.auth.token.email.lower())) &&
+          request.resource.data.email == request.auth.token.email.lower() &&
+          request.resource.data.isApproved == false
+        );
+
+      allow update: if isSuperAdmin() ||
+        (
+          isAuthenticated() &&
+          request.auth.uid == adminId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt'])
+        );
+
       allow delete: if isSuperAdmin();
     }
-    
-    // Admin invites - super admin manages; an authenticated user may read the
-    // invite that matches their own email so they can self-link on first login.
+
+    // ── Admin Invites ────────────────────────────────────────────────────────
+    // Super admins manage invites; invited users can read their own invite
+    // (matched by their email) so they can self-link on first login.
     match /admin_invites/{email} {
       allow read: if isSuperAdmin() ||
-        (isAuthenticated() && request.auth.token.email != null &&
-         request.auth.token.email.lower() == email);
+        (
+          isAuthenticated() &&
+          request.auth.token.email != null &&
+          request.auth.token.email.lower() == email
+        );
       allow write: if isSuperAdmin();
     }
-    
-    // User data (activities, saved videos, listening history)
+
+    // ── User data (activities, saved videos, listening history) ─────────────
     match /users/{userId}/{document=**} {
       allow read, write: if isOwner(userId);
     }

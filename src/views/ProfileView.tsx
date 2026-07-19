@@ -24,7 +24,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserContentStore } from '@/stores/userContentStore';
 import { useActivityStore } from '@/stores/activityStore';
 import { useQuestionStore } from '@/stores/questionStore';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
 import { EditProfileModal } from '@/components/auth/EditProfileModal';
 import { AskQuestionModal } from '@/components/questions/AskQuestionModal';
@@ -40,7 +40,7 @@ export function ProfileView() {
   const { openAuthModal, navigateTo, setActiveTab } = useNavigationStore();
   const { theme, toggleTheme } = useThemeStore();
   const { user, logout } = useAuth();
-  const { isAdmin } = useAdminAuth();
+  const isAdmin = useAuthStore((s) => s.isAdmin());
   const {
     savedLectures,
     downloadHistory,

@@ -9,6 +9,7 @@ import type { AdminUser } from '@/types';
 export function AdminManagement() {
   const { isSuperAdmin, user: currentUser } = useAdminAuth();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [invites, setInvites] = useState<AdminUser[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ email: '', displayName: '', role: 'admin' as 'admin' | 'super_admin' });
   const [saving, setSaving] = useState(false);
@@ -21,6 +22,20 @@ export function AdminManagement() {
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, 'admin_invites'));
+    const unsub = onSnapshot(q, (snap) => {
+      setInvites(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminUser)));
+    });
+    return () => unsub();
+  }, []);
+
+  // Invites that haven't been claimed yet (no matching admins/{uid} doc,
+  // i.e. that email hasn't signed in for the first time to self-link).
+  const unclaimedInvites = invites.filter(
+    (inv) => !admins.some((a) => a.email?.toLowerCase() === inv.email?.toLowerCase())
+  );
 
   const handleInvite = async () => {
     if (!formData.email || !formData.displayName) return;
@@ -50,27 +65,9 @@ export function AdminManagement() {
         },
       });
 
-      // Also create the admin document with pending status
-      const adminRef = doc(db, 'admins', email.replace(/\./g, '_'));
-      await setDoc(adminRef, {
-        email,
-        displayName: formData.displayName,
-        role: formData.role,
-        isApproved: false,
-        isEmailVerified: false,
-        createdAt: serverTimestamp(),
-        createdBy: currentUser?.uid,
-        permissions: {
-          canManageVideos: true,
-          canManageArticles: true,
-          canManageGallery: true,
-          canManageDonations: true,
-          canManageBanners: false,
-          canManageAdmins: false,
-          canManageNotifications: true,
-          canAnswerQuestions: true,
-        },
-      });
+      // Note: the real admins/{uid} doc is created automatically the first
+      // time this invited user signs in (see useAdminAuth's invite self-link),
+      // since we don't know their Firebase Auth UID until then.
 
       setShowModal(false);
       setFormData({ email: '', displayName: '', role: 'admin' });
@@ -96,6 +93,11 @@ export function AdminManagement() {
     await deleteDoc(doc(db, 'admins', adminId));
   };
 
+  const handleRevokeInvite = async (inviteEmail: string) => {
+    if (!confirm('Revoke this invite?')) return;
+    await deleteDoc(doc(db, 'admin_invites', inviteEmail));
+  };
+
   if (!isSuperAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
@@ -117,6 +119,33 @@ export function AdminManagement() {
           <Plus className="w-4 h-4" /> Invite Admin
         </button>
       </div>
+
+      {/* Unclaimed invites - waiting for the invited person to sign in once */}
+      {unclaimedInvites.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+            Invited &middot; awaiting first sign-in
+          </p>
+          {unclaimedInvites.map((inv, i) => (
+            <motion.div key={inv.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+              className="p-4 rounded-2xl flex items-center gap-3" style={{ background: 'var(--bg-secondary)', border: '1px dashed var(--border-color)' }}>
+              <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-5 h-5 text-amber-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{inv.displayName || 'Unnamed'}</h3>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium">{inv.role}</span>
+                </div>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{inv.email} &middot; not signed in yet</p>
+              </div>
+              <button onClick={() => handleRevokeInvite(inv.email)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+                <X className="w-4 h-4 text-red-500" />
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {/* Admins List */}
       <div className="space-y-3">

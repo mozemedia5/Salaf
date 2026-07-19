@@ -84,7 +84,15 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow read: if isAuthenticated() && 
         (request.auth.uid == adminId || isAdmin());
-      allow create: if isSuperAdmin();
+      // Super admins can create any admin doc. A newly signed-in user can also
+      // create their OWN admin doc (self-link) if a matching pending invite
+      // exists for their email, and only as an unapproved pending record.
+      allow create: if isSuperAdmin() ||
+        (isAuthenticated() && request.auth.uid == adminId &&
+         request.auth.token.email != null &&
+         exists(/databases/$(database)/documents/admin_invites/$(request.auth.token.email.lower())) &&
+         request.resource.data.email == request.auth.token.email.lower() &&
+         request.resource.data.isApproved == false);
       allow update: if isSuperAdmin() || 
         (request.auth.uid == adminId && 
          request.resource.data.diff(resource.data).affectedKeys()
@@ -92,9 +100,13 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
     
-    // Admin invites - super admin only
+    // Admin invites - super admin manages; an authenticated user may read the
+    // invite that matches their own email so they can self-link on first login.
     match /admin_invites/{email} {
-      allow read, write: if isSuperAdmin();
+      allow read: if isSuperAdmin() ||
+        (isAuthenticated() && request.auth.token.email != null &&
+         request.auth.token.email.lower() == email);
+      allow write: if isSuperAdmin();
     }
     
     // User data (activities, saved videos, listening history)

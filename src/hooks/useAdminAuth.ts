@@ -4,6 +4,34 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } fr
 import { auth, db } from '@/lib/firebase';
 import type { AdminUser } from '@/types';
 
+// If the signed-in user has no `admins/{uid}` doc yet but was invited via
+// `admin_invites/{email}`, create their real admin doc from the invite so the
+// existing approval flow (AdminManagement.handleApprove) can find and approve
+// them. The invite stays pending (isApproved: false) until a super admin
+// approves the linked admins/{uid} doc.
+async function linkInviteIfPending(firebaseUser: User): Promise<void> {
+  const email = firebaseUser.email?.toLowerCase();
+  if (!email) return;
+
+  const inviteRef = doc(db, 'admin_invites', email);
+  const inviteSnap = await getDoc(inviteRef);
+  if (!inviteSnap.exists()) return;
+
+  const invite = inviteSnap.data();
+  const adminDocRef = doc(db, 'admins', firebaseUser.uid);
+
+  await setDoc(adminDocRef, {
+    email,
+    displayName: invite.displayName || firebaseUser.displayName || '',
+    role: invite.role || 'admin',
+    permissions: invite.permissions,
+    isApproved: false,
+    isEmailVerified: false,
+    createdAt: serverTimestamp(),
+    createdBy: invite.createdBy || null,
+  });
+}
+
 export function useAdminAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [adminProfile, setAdminProfile] = useState<AdminUser | null>(null);
@@ -20,7 +48,17 @@ export function useAdminAuth() {
       if (firebaseUser) {
         try {
           const adminDocRef = doc(db, 'admins', firebaseUser.uid);
-          const adminDoc = await getDoc(adminDocRef);
+          let adminDoc = await getDoc(adminDocRef);
+
+          if (!adminDoc.exists()) {
+            // Try to self-link a pending invite into a real admins/{uid} doc.
+            try {
+              await linkInviteIfPending(firebaseUser);
+              adminDoc = await getDoc(adminDocRef);
+            } catch (linkErr) {
+              console.error('Admin invite linking failed:', linkErr);
+            }
+          }
 
           if (adminDoc.exists()) {
             const data = adminDoc.data() as AdminUser;

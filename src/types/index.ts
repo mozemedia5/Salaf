@@ -115,6 +115,7 @@ export interface Banner {
   details?: string;
   createdBy?: string;
   createdAt?: string;
+  expiresAt?: string;
   isActive?: boolean;
 }
 

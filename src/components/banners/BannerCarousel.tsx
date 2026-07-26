@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query } from 'firebase/firestore';
+import { BANNERS } from '@/lib/data';
 import type { Banner } from '@/types';
 
 export function BannerCarousel() {
-  const [banners, setBanners] = useState<Banner[]>([]);
+  const [banners, setBanners] = useState<Banner[]>(BANNERS);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -18,8 +18,30 @@ export function BannerCarousel() {
         id: doc.id,
         ...doc.data()
       })) as Banner[];
-      setBanners(bannerData);
-      setLoading(false);
+
+      const now = new Date();
+      const activeBanners = bannerData
+        .filter(b => {
+          if (b.isActive === false) return false;
+          if (b.expiresAt) {
+            return new Date(b.expiresAt) > now;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          const timeA = a.createdAt ? (a.createdAt as any).seconds || new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? (b.createdAt as any).seconds || new Date(b.createdAt).getTime() : 0;
+          return timeB - timeA;
+        });
+
+      if (activeBanners.length > 0) {
+        setBanners(activeBanners);
+      } else {
+        setBanners(BANNERS);
+      }
+    }, (error) => {
+      console.error("Failed to load banners from Firestore, using fallbacks:", error);
+      setBanners(BANNERS);
     });
 
     return () => unsubscribe();
@@ -30,7 +52,7 @@ export function BannerCarousel() {
     setExpanded(false);
   }, [currentIndex]);
 
-  if (loading || banners.length === 0) {
+  if (banners.length === 0) {
     return null;
   }
 
@@ -73,7 +95,7 @@ export function BannerCarousel() {
               aria-label={currentBanner.link ? `Open ${currentBanner.title}` : currentBanner.title}
             >
               <img
-                src={currentBanner.imageURL}
+                src={currentBanner.imageURL || (currentBanner as any).bannerImageUrl}
                 alt={currentBanner.title}
                 className="w-full h-full object-cover"
               />

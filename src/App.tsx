@@ -22,6 +22,15 @@ import { useNavigationStore } from '@/stores/navigationStore';
 function App() {
   const currentView = useNavigationStore((s) => s.currentView);
   const setTheme = useThemeStore((s) => s.setTheme);
+  const navigateTo = useNavigationStore((s) => s.navigateTo);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).navigateAppTo = (view: any) => {
+        navigateTo(view);
+      };
+    }
+  }, [navigateTo]);
 
   useEffect(() => {
     const saved = localStorage.getItem('noor-theme');

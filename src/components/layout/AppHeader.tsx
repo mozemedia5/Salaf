@@ -23,7 +23,7 @@ const VIEW_TITLES: Record<ViewId, string> = {
   'user-questions': 'My Questions',
 };
 
-const SHOW_BACK: ViewId[] = ['article-detail', 'video-player', 'audio-player', 'notifications', 'search', 'privacy-policy', 'terms-of-service', 'user-questions'];
+const SHOW_BACK: ViewId[] = ['article-detail', 'video-player', 'audio-player', 'notifications', 'search', 'privacy-policy', 'terms-of-service', 'user-questions', 'gallery', 'articles'];
 
 export function AppHeader() {
   const { currentView, navigateTo, goBack, toggleSearch } = useNavigationStore();

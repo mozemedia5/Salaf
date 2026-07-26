@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Analytics } from '@vercel/analytics/react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -18,11 +18,24 @@ import { AdminDashboardView } from '@/views/AdminDashboardView';
 import { UserQuestionsView } from '@/views/UserQuestionsView';
 import { useThemeStore } from '@/stores/themeStore';
 import { useNavigationStore } from '@/stores/navigationStore';
+import { useAuthStore } from '@/stores/authStore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 function App() {
   const currentView = useNavigationStore((s) => s.currentView);
   const setTheme = useThemeStore((s) => s.setTheme);
   const navigateTo = useNavigationStore((s) => s.navigateTo);
+  const user = useAuthStore((s) => s.user);
+
+  const prevQuestionsRef = useRef<Record<string, string>>({});
+  const isFirstLoadQuestionsRef = useRef(true);
+
+  const prevBannersRef = useRef<Record<string, boolean>>({});
+  const isFirstLoadBannersRef = useRef(true);
+
+  const prevNotifsRef = useRef<Record<string, boolean>>({});
+  const isFirstLoadNotifsRef = useRef(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -31,6 +44,162 @@ function App() {
       };
     }
   }, [navigateTo]);
+
+  // Request Notification permission on app startup
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then((permission) => {
+          console.log('Push notification permission:', permission);
+        });
+      }
+    }
+  }, []);
+
+  // Listen to current user's questions and trigger native notifications on state transition to answered
+  useEffect(() => {
+    if (!user) {
+      prevQuestionsRef.current = {};
+      isFirstLoadQuestionsRef.current = true;
+      return;
+    }
+
+    const q = query(
+      collection(db, 'questions'),
+      where('userId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const currentQuestions: Record<string, string> = {};
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        const status = data.status || 'pending';
+        currentQuestions[doc.id] = status;
+
+        if (!isFirstLoadQuestionsRef.current) {
+          const oldStatus = prevQuestionsRef.current[doc.id];
+          // Trigger when status transitions to 'answered'
+          if (oldStatus === 'pending' && status === 'answered') {
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              const notification = new Notification('Scholar Answered Your Question!', {
+                body: `Answer: "${data.answer || ''}"`,
+                icon: '/icons/icon-192x192.png',
+                badge: '/icons/icon-192x192.png',
+              });
+              notification.onclick = () => {
+                window.focus();
+                // Navigate to My Questions
+                (window as any).navigateAppTo?.('user-questions');
+              };
+            }
+          }
+        }
+      });
+
+      prevQuestionsRef.current = currentQuestions;
+      isFirstLoadQuestionsRef.current = false;
+    }, (error) => {
+      console.error('Error listening to user questions:', error);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Listen to newly added banners and trigger native notifications
+  useEffect(() => {
+    const q = query(collection(db, 'banners'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const currentBanners: Record<string, boolean> = {};
+
+      snapshot.docs.forEach((doc) => {
+        currentBanners[doc.id] = true;
+
+        if (!isFirstLoadBannersRef.current) {
+          if (!prevBannersRef.current[doc.id]) {
+            // New banner added!
+            const data = doc.data();
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              const notification = new Notification('New Banner Announcement!', {
+                body: `${data.title || 'Check out our new banner!'}`,
+                icon: '/icons/icon-192x192.png',
+                badge: '/icons/icon-192x192.png',
+              });
+              notification.onclick = () => {
+                window.focus();
+                // Navigate to home tab
+                (window as any).navigateAppTo?.('home');
+                if (data.link) {
+                  const href = /^https?:\/\//i.test(data.link) ? data.link : `https://${data.link}`;
+                  window.open(href, '_blank', 'noopener,noreferrer');
+                }
+              };
+            }
+          }
+        }
+      });
+
+      prevBannersRef.current = currentBanners;
+      isFirstLoadBannersRef.current = false;
+    }, (error) => {
+      console.error('Error listening to banners:', error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to newly added global notifications and trigger native notifications, and sync unread count
+  useEffect(() => {
+    const q = query(collection(db, 'notifications'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const currentNotifs: Record<string, boolean> = {};
+      const allIds = snapshot.docs.map(doc => doc.id);
+
+      snapshot.docs.forEach((doc) => {
+        currentNotifs[doc.id] = true;
+
+        if (!isFirstLoadNotifsRef.current) {
+          if (!prevNotifsRef.current[doc.id]) {
+            // New notification document added!
+            const data = doc.data();
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              const notification = new Notification(data.title || 'New Announcement!', {
+                body: data.body || '',
+                icon: '/icons/icon-192x192.png',
+                badge: '/icons/icon-192x192.png',
+              });
+              notification.onclick = () => {
+                window.focus();
+                // Navigate to notifications view
+                (window as any).navigateAppTo?.('notifications');
+                if (data.link) {
+                  const href = /^https?:\/\//i.test(data.link) ? data.link : `https://${data.link}`;
+                  window.open(href, '_blank', 'noopener,noreferrer');
+                }
+              };
+            }
+          }
+        }
+      });
+
+      prevNotifsRef.current = currentNotifs;
+      isFirstLoadNotifsRef.current = false;
+
+      // Update the unread count in Zustand store
+      try {
+        const storedReadStr = localStorage.getItem('salaf_read_notif_ids');
+        const readIds = storedReadStr ? JSON.parse(storedReadStr) : [];
+        const unreadCount = allIds.filter(id => !readIds.includes(id)).length;
+        useNavigationStore.getState().setUnreadNotifications(unreadCount);
+      } catch (err) {
+        console.error('Error updating unread count:', err);
+      }
+    }, (error) => {
+      console.error('Error listening to notifications:', error);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('noor-theme');

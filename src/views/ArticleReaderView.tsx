@@ -1,19 +1,87 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bookmark, Share2, Clock } from 'lucide-react';
+import { Bookmark, Share2, Clock, BookOpen } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
-import { ARTICLES } from '@/lib/data';
 import { ArticleCard } from '@/components/cards/ArticleCard';
 import { cn } from '@/lib/utils';
+import { doc, getDoc, collection, query, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Article } from '@/types';
 
 export function ArticleReaderView() {
   const { selectedArticleId } = useNavigationStore();
+  const [article, setArticle] = useState<Article | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [bookmarked, setBookmarked] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
+  const [loading, setLoading] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const article = ARTICLES.find(a => a.id === selectedArticleId) || ARTICLES[0];
-  const relatedArticles = ARTICLES.filter(a => a.id !== article.id && a.category === article.category).slice(0, 3);
+  // Fetch the active article from Firestore
+  useEffect(() => {
+    if (!selectedArticleId) return;
+
+    setLoading(true);
+    const docRef = doc(db, 'articles', selectedArticleId);
+    getDoc(docRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        let createdAtStr = '';
+        if (data.createdAt) {
+          if (typeof data.createdAt.toDate === 'function') {
+            createdAtStr = data.createdAt.toDate().toLocaleDateString();
+          } else if (data.createdAt.seconds) {
+            createdAtStr = new Date(data.createdAt.seconds * 1000).toLocaleDateString();
+          } else {
+            createdAtStr = new Date(data.createdAt).toLocaleDateString();
+          }
+        }
+        setArticle({
+          id: docSnap.id,
+          ...data,
+          createdAt: createdAtStr || new Date().toLocaleDateString()
+        } as Article);
+      }
+      setLoading(false);
+    }).catch((err) => {
+      console.error('Error fetching article:', err);
+      setLoading(false);
+    });
+  }, [selectedArticleId]);
+
+  // Fetch related articles
+  useEffect(() => {
+    if (!article) return;
+
+    const q = query(collection(db, 'articles'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(doc => {
+        const data = doc.data();
+        let createdAtStr = '';
+        if (data.createdAt) {
+          if (typeof data.createdAt.toDate === 'function') {
+            createdAtStr = data.createdAt.toDate().toLocaleDateString();
+          } else if (data.createdAt.seconds) {
+            createdAtStr = new Date(data.createdAt.seconds * 1000).toLocaleDateString();
+          } else {
+            createdAtStr = new Date(data.createdAt).toLocaleDateString();
+          }
+        }
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: createdAtStr || new Date().toLocaleDateString()
+        } as Article;
+      });
+
+      const related = list
+        .filter(a => a.id !== article.id && a.category === article.category)
+        .slice(0, 3);
+      setRelatedArticles(related);
+    });
+
+    return () => unsub();
+  }, [article]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,6 +94,26 @@ export function ArticleReaderView() {
     el?.addEventListener('scroll', handleScroll);
     return () => el?.removeEventListener('scroll', handleScroll);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div className="text-center py-20 px-4">
+        <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-4">
+          <BookOpen className="w-8 h-8 text-emerald-500" />
+        </div>
+        <h3 className="font-heading font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>Article Not Found</h3>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>The selected article could not be loaded.</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -40,15 +128,17 @@ export function ArticleReaderView() {
       </div>
 
       {/* Hero image */}
-      <div className="relative h-56 flex-shrink-0">
-        <img src={article.featuredImageURL} alt={article.title} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-      </div>
+      {article.featuredImageURL && (
+        <div className="relative h-56 flex-shrink-0">
+          <img src={article.featuredImageURL} alt={article.title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        </div>
+      )}
 
       {/* Content */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto -mt-8 relative">
+      <div ref={contentRef} className={cn("flex-1 overflow-y-auto relative", article.featuredImageURL ? "-mt-8" : "pt-14")}>
         <div
-          className="rounded-t-3xl px-5 pt-6 pb-8 min-h-full"
+          className={cn("px-5 pt-6 pb-8 min-h-full", article.featuredImageURL ? "rounded-t-3xl" : "")}
           style={{ background: 'var(--bg-primary)' }}
         >
           <span className="text-[10px] px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">
@@ -61,13 +151,13 @@ export function ArticleReaderView() {
 
           <div className="flex items-center gap-3 mt-4">
             <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <span className="text-sm font-bold text-emerald-500">{article.authorName[0]}</span>
+              <span className="text-sm font-bold text-emerald-500">{article.authorName?.[0] || 'S'}</span>
             </div>
             <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{article.authorName}</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{article.authorName || 'Scholar'}</p>
               <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
                 <Clock className="w-3 h-3" />
-                <span>{article.readingTime} read</span>
+                <span>{article.readingTime || '5 min'} read</span>
                 <span>&middot;</span>
                 <span>{article.createdAt}</span>
               </div>
@@ -76,7 +166,21 @@ export function ArticleReaderView() {
               <button onClick={() => setBookmarked(!bookmarked)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                 <Bookmark className={cn('w-5 h-5', bookmarked ? 'text-emerald-500 fill-emerald-500' : 'text-gray-400')} />
               </button>
-              <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <button
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: article.title,
+                      text: article.excerpt,
+                      url: window.location.href
+                    }).catch(console.error);
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    alert('Article link copied to clipboard!');
+                  }
+                }}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
                 <Share2 className="w-5 h-5 text-gray-400" />
               </button>
             </div>
@@ -86,22 +190,18 @@ export function ArticleReaderView() {
 
           {/* Article body */}
           <div className="prose prose-sm max-w-none dark:prose-invert" style={{ color: 'var(--text-primary)' }}>
-            <p className="text-base leading-[1.8]" style={{ color: 'var(--text-secondary)' }}>
-              {article.excerpt} This article delves deep into the subject matter, exploring various perspectives
-              and providing practical guidance based on authentic Islamic sources. The Prophet Muhammad (peace be upon him)
-              emphasized the importance of this topic in numerous hadith, making it essential knowledge for every Muslim.
-            </p>
-            <p className="text-base leading-[1.8] mt-4" style={{ color: 'var(--text-secondary)' }}>
-              In our modern world, understanding these principles becomes even more crucial. As Muslims living in
-              diverse societies, we must ground our actions in the teachings of the Quran and the authentic Sunnah,
-              seeking knowledge from qualified scholars who have dedicated their lives to studying the deen.
-            </p>
-            <blockquote className="border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-r-xl my-6 italic" style={{ color: 'var(--text-secondary)' }}>
-              "The best among you are those who learn the Quran and teach it." — Prophet Muhammad (Sahih al-Bukhari)
-            </blockquote>
-            <p className="text-base leading-[1.8]" style={{ color: 'var(--text-secondary)' }}>
-              May Allah grant us beneficial knowledge and righteous actions. Ameen.
-            </p>
+            {article.content ? (
+              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            ) : (
+              <>
+                <p className="text-base leading-[1.8]" style={{ color: 'var(--text-secondary)' }}>
+                  {article.excerpt}
+                </p>
+                <p className="text-base leading-[1.8] mt-4" style={{ color: 'var(--text-secondary)' }}>
+                  May Allah grant us beneficial knowledge and righteous actions. Ameen.
+                </p>
+              </>
+            )}
           </div>
 
           {/* Related articles */}

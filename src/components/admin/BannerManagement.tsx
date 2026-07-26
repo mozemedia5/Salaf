@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Megaphone, ExternalLink, MoreVertical, Calendar } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Banner } from '@/types';
@@ -26,6 +27,7 @@ export function BannerManagement() {
     expirationDays: 30
   });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy('createdAt', 'desc'));
@@ -52,6 +54,7 @@ export function BannerManagement() {
       const { expirationDays, ...restData } = formData;
       const data = { 
         ...restData, 
+        bannerImageUrl: formData.imageURL,
         expiresAt,
         updatedAt: serverTimestamp(), 
         createdAt: editingBanner ? undefined : serverTimestamp() 
@@ -185,10 +188,14 @@ export function BannerManagement() {
                   style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
               </div>
               <div>
-                <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-muted)' }}>Image URL *</label>
-                <input type="text" value={formData.imageURL} onChange={(e) => setFormData({ ...formData, imageURL: e.target.value })} placeholder="https://..."
-                  className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
-                  style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
+                <ImageUploadField
+                  folder="salaf/banners"
+                  uploadPreset="salaf_banners"
+                  label="Banner Image *"
+                  currentImageUrl={formData.imageURL}
+                  onUploaded={(url) => setFormData({ ...formData, imageURL: url })}
+                  onUploadStateChange={setUploading}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -228,7 +235,7 @@ export function BannerManagement() {
                 <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="w-4 h-4 rounded accent-emerald-500" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Active</span>
               </label>
-              <button onClick={handleSave} disabled={saving || !formData.title || !formData.imageURL}
+              <button onClick={handleSave} disabled={saving || uploading || !formData.title || !formData.imageURL}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow disabled:opacity-50">
                 {saving ? 'Saving...' : editingBanner ? 'Update' : 'Add Banner'}
               </button>

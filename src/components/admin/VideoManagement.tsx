@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Play, Eye, Heart, Search, X } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ export function VideoManagement() {
     isActive: true,
   });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'videos'));
@@ -67,6 +69,7 @@ export function VideoManagement() {
       const videoId = extractVideoId(formData.videoURL, formData.videoType);
       const data = {
         ...formData,
+        thumbnailUrl: formData.thumbnailURL,
         youtubeId: formData.videoType === 'youtube' ? videoId : '',
         tiktokId: formData.videoType === 'tiktok' ? videoId : '',
         viewCount: editingVideo?.viewCount || 0,
@@ -354,14 +357,13 @@ export function VideoManagement() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>Thumbnail URL</label>
-                  <input
-                    type="text"
-                    value={formData.thumbnailURL}
-                    onChange={(e) => setFormData({ ...formData, thumbnailURL: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
-                    style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  <ImageUploadField
+                    folder="salaf/thumbnails"
+                    uploadPreset="salaf_thumbnails"
+                    label="Video Thumbnail"
+                    currentImageUrl={formData.thumbnailURL}
+                    onUploaded={(url) => setFormData({ ...formData, thumbnailURL: url })}
+                    onUploadStateChange={setUploading}
                   />
                 </div>
               </div>
@@ -378,7 +380,7 @@ export function VideoManagement() {
 
               <button
                 onClick={handleSave}
-                disabled={saving || !formData.title || !formData.videoURL}
+                disabled={saving || uploading || !formData.title || !formData.videoURL}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow disabled:opacity-50 transition-all"
               >
                 {saving ? 'Saving...' : editingVideo ? 'Update Video' : 'Add Video'}

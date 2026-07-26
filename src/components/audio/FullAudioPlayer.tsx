@@ -1,8 +1,8 @@
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart, Share2, List, X, Minus } from 'lucide-react';
-import { useAudioStore } from '@/stores/audioStore';
-import { cn } from '@/lib/utils';
-import { useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Heart, Share2, List, X, Minus } from "lucide-react";
+import { useAudioStore } from "@/stores/audioStore";
+import { cn } from "@/lib/utils";
+import { useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
@@ -10,21 +10,9 @@ export function FullAudioPlayer() {
   const { currentTrack, isPlaying, togglePlay, isFullPlayerOpen, closeFullPlayer, progress, currentTime, duration, setProgress, playbackSpeed, setSpeed, skipForward, skipBackward, favorites, toggleFavorite } = useAudioStore();
   const progressRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isPlaying) {
-      const interval = setInterval(() => {
-        const s = useAudioStore.getState();
-        const newTime = s.currentTime + 1;
-        const dur = s.duration || 180;
-        setProgress(newTime % dur, dur);
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isPlaying, setProgress]);
-
   if (!currentTrack) return null;
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   const isFavorited = favorites.includes(currentTrack.id);
   const currentSpeedIndex = SPEEDS.indexOf(playbackSpeed) >= 0 ? SPEEDS.indexOf(playbackSpeed) : 2;
 
@@ -39,12 +27,12 @@ export function FullAudioPlayer() {
     <AnimatePresence>
       {isFullPlayerOpen && (
         <motion.div
-          initial={{ y: '100%' }}
+          initial={{ y: "100%" }}
           animate={{ y: 0 }}
-          exit={{ y: '100%' }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
           className="fixed inset-0 z-[60] flex flex-col"
-          style={{ background: 'linear-gradient(180deg, #0F172A 0%, #020617 100%)' }}
+          style={{ background: "linear-gradient(180deg, #0F172A 0%, #020617 100%)" }}
         >
           {/* Drag handle & header */}
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
@@ -64,7 +52,7 @@ export function FullAudioPlayer() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1 }}
               className="w-64 h-64 rounded-2xl overflow-hidden shadow-2xl"
-              style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
             >
               <img src={currentTrack.thumbnailURL} alt={currentTrack.title} className="w-full h-full object-cover" />
             </motion.div>
@@ -133,7 +121,7 @@ export function FullAudioPlayer() {
                 {playbackSpeed}x
               </button>
               <button onClick={() => toggleFavorite(currentTrack.id)}>
-                <Heart className={cn('w-5 h-5', isFavorited ? 'text-red-500 fill-red-500' : 'text-gray-400')} />
+                <Heart className={cn("w-5 h-5", isFavorited ? "text-red-500 fill-red-500" : "text-gray-400")} />
               </button>
               <button>
                 <Share2 className="w-5 h-5 text-gray-400" />

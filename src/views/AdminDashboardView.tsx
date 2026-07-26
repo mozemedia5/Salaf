@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Play, FileText, Image as ImageIcon, HandHeart,
-  LayoutPanelTop, MessageCircle, Users, Bell, ChevronLeft, Loader2, ShieldAlert, Menu, X,
+  LayoutPanelTop, MessageCircle, Users, Bell, ChevronLeft, Loader2, ShieldAlert, Menu, X, Headphones
 } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAdminStore } from '@/stores/adminStore';
@@ -10,6 +10,7 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import type { AdminSection, AdminUser } from '@/types';
 import { OverviewSection } from '@/components/admin/OverviewSection';
 import { VideoManagement } from '@/components/admin/VideoManagement';
+import { AudioManagement } from '@/components/admin/AudioManagement';
 import { ArticleManagement } from '@/components/admin/ArticleManagement';
 import { GalleryManagement } from '@/components/admin/GalleryManagement';
 import { DonationManagement } from '@/components/admin/DonationManagement';
@@ -29,6 +30,7 @@ interface SectionDef {
 const SECTIONS: SectionDef[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'videos', label: 'Videos', icon: Play, permission: 'canManageVideos' },
+  { id: 'audio', label: 'Audio', icon: Headphones, permission: 'canManageVideos' },
   { id: 'articles', label: 'Articles', icon: FileText, permission: 'canManageArticles' },
   { id: 'gallery', label: 'Gallery', icon: ImageIcon, permission: 'canManageGallery' },
   { id: 'donations', label: 'Donations', icon: HandHeart, permission: 'canManageDonations' },
@@ -88,6 +90,7 @@ export function AdminDashboardView() {
     switch (currentSection) {
       case 'overview': return <OverviewSection />;
       case 'videos': return <VideoManagement />;
+      case 'audio': return <AudioManagement />;
       case 'articles': return <ArticleManagement />;
       case 'gallery': return <GalleryManagement />;
       case 'donations': return <DonationManagement />;
@@ -99,7 +102,7 @@ export function AdminDashboardView() {
     }
   };
 
-  const SidebarContent = () => (
+  const renderSidebarContent = () => (
     <>
       <div className="flex items-center gap-3 px-2 py-4">
         <img src="/icons/icon-192x192.png" alt="Salaf" className="h-9 w-9 rounded-lg shadow-sm" />
@@ -141,7 +144,7 @@ export function AdminDashboardView() {
         className="hidden md:flex md:flex-col w-64 flex-shrink-0 px-3 py-4 border-r overflow-y-auto"
         style={{ borderColor: 'var(--border-color)', background: 'var(--bg-secondary)' }}
       >
-        <SidebarContent />
+        {renderSidebarContent()}
         <button
           onClick={goBack}
           className="mt-auto flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900/10"
@@ -177,7 +180,7 @@ export function AdminDashboardView() {
               >
                 <X className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
               </button>
-              <SidebarContent />
+              {renderSidebarContent()}
               <button
                 onClick={goBack}
                 className="mt-auto flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900/10"

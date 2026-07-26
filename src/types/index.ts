@@ -40,6 +40,12 @@ export interface AudioTrack {
   category: string;
   duration: string;
   playCount: string;
+  audioUrl?: string;
+  audioDurationSeconds?: number;
+  isActive?: boolean;
+  createdAt?: any;
+  createdBy?: string;
+  uploadedBy?: string;
 }
 
 export interface Article {
@@ -186,4 +192,4 @@ export type TabId = 'home' | 'videos' | 'audio' | 'donate' | 'profile';
 
 export type ViewId = TabId | 'articles' | 'gallery' | 'search' | 'notifications' | 'article-detail' | 'video-player' | 'audio-player' | 'privacy-policy' | 'terms-of-service' | 'admin-dashboard' | 'user-questions';
 
-export type AdminSection = 'overview' | 'videos' | 'articles' | 'gallery' | 'donations' | 'banners' | 'questions' | 'admins' | 'notifications' | 'analytics';
+export type AdminSection = 'overview' | 'videos' | 'audio' | 'articles' | 'gallery' | 'donations' | 'banners' | 'questions' | 'admins' | 'notifications' | 'analytics';

@@ -14,7 +14,7 @@ import { useVideoStore } from '@/stores/videoStore';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CATEGORIES, CAMPAIGNS, DAILY_REMINDER } from '@/lib/data';
+import { CATEGORIES, CAMPAIGNS, DAILY_REMINDER, AUDIO_TRACKS } from '@/lib/data';
 import type { Video, AudioTrack, Campaign } from '@/types';
 
 export function HomeView() {
@@ -71,17 +71,29 @@ export function HomeView() {
 
   // Fetch audio tracks from Firestore
   useEffect(() => {
-    const aq = query(
-      collection(db, 'audio'),
-      where('isActive', '!=', false),
-      orderBy('isActive'),
-      orderBy('createdAt', 'desc')
-    );
-    const unsubAudio = onSnapshot(aq, (snap) => {
+    const q = query(collection(db, 'audio'));
+    const unsubAudio = onSnapshot(q, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as AudioTrack));
-      setAudioTracks(data);
-      // Get the 2 most recent audio tracks
-      setRecentAudio(data.slice(0, 2));
+
+      // Sort in-memory by createdAt desc to avoid requiring composite indexes
+      data.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+
+      const activeTracks = data.filter(a => a.isActive !== false);
+      setAudioTracks(activeTracks);
+
+      // Get the 2 most recent audio tracks (or fallback to mock tracks if empty)
+      if (activeTracks.length > 0) {
+        setRecentAudio(activeTracks.slice(0, 2));
+      } else {
+        setRecentAudio(AUDIO_TRACKS.slice(0, 2));
+      }
+    }, (err) => {
+      console.error("Failed to load audio tracks:", err);
+      setRecentAudio(AUDIO_TRACKS.slice(0, 2));
     });
 
     return () => unsubAudio();

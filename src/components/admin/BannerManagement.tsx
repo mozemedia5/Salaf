@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Megaphone, ExternalLink, MoreVertical, Calendar } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Banner } from '@/types';
@@ -11,6 +12,7 @@ const CATEGORIES = ['Quran', 'Hadith', 'Aqeedah', 'Seerah', 'Youth', 'Ramadan', 
 
 export function BannerManagement() {
   const { banners, setBanners } = useAdminStore();
+  const { adminProfile, isSuperAdmin } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -37,7 +39,11 @@ export function BannerManagement() {
     return () => unsub();
   }, []);
 
-  const filtered = banners.filter(b => b.title?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const visibleBanners = isSuperAdmin
+    ? banners
+    : banners.filter(b => b.createdBy === adminProfile?.id);
+
+  const filtered = visibleBanners.filter(b => b.title?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleSave = async () => {
     if (!formData.title || !formData.imageURL) return;
@@ -56,6 +62,7 @@ export function BannerManagement() {
         ...restData, 
         bannerImageUrl: formData.imageURL,
         expiresAt,
+        createdBy: editingBanner ? (editingBanner.createdBy || adminProfile?.id || '') : (adminProfile?.id || ''),
         updatedAt: serverTimestamp(), 
         createdAt: editingBanner ? undefined : serverTimestamp() 
       };
@@ -85,11 +92,21 @@ export function BannerManagement() {
   };
 
   const handleDelete = async (id: string) => {
+    const bannerToDelete = banners.find(b => b.id === id);
+    if (!bannerToDelete) return;
+    if (!isSuperAdmin && bannerToDelete.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to delete this banner.");
+      return;
+    }
     if (!confirm('Delete this banner?')) return;
     await deleteDoc(doc(db, 'banners', id));
   };
 
   const openEdit = (banner: Banner) => {
+    if (!isSuperAdmin && banner.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to edit this banner.");
+      return;
+    }
     setEditingBanner(banner);
     // Try to estimate remaining days or just default to 30
     setFormData({

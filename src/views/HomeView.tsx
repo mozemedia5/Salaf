@@ -12,13 +12,13 @@ import { BannerCarousel } from '@/components/banners/BannerCarousel';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useVideoStore } from '@/stores/videoStore';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
-import { collection, query, onSnapshot, orderBy, where } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CATEGORIES, CAMPAIGNS, DAILY_REMINDER } from '@/lib/data';
-import type { Video, AudioTrack, Campaign } from '@/types';
+import { CATEGORIES, CAMPAIGNS, DAILY_REMINDER, GALLERY_IMAGES } from '@/lib/data';
+import type { Video, AudioTrack, Campaign, GalleryImage } from '@/types';
 
 export function HomeView() {
-  const { setActiveTab } = useNavigationStore();
+  const { setActiveTab, navigateTo } = useNavigationStore();
   const videoStore = useVideoStore();
   const { showInstall, handleInstallClick } = usePWAInstall();
   const [activeCategory, setActiveCategory] = useState('All');
@@ -28,6 +28,7 @@ export function HomeView() {
   const [recentAudio, setRecentAudio] = useState<AudioTrack[]>([]);
   const [, setPlayingVideo] = useState<Video | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
 
   // Fetch campaigns from Firestore
   useEffect(() => {
@@ -37,6 +38,14 @@ export function HomeView() {
         id: doc.id,
         ...doc.data()
       })) as Campaign[];
+
+      // Sort in-memory by createdAt descending
+      list.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+
       if (list.length > 0) {
         setCampaigns(list);
       } else {
@@ -49,21 +58,43 @@ export function HomeView() {
     return () => unsubscribe();
   }, []);
 
+  // Fetch gallery images from Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'gallery'));
+    const unsub = onSnapshot(q, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryImage));
+      // Sort in-memory by createdAt descending
+      list.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+      setGalleryImages(list);
+    }, (error) => {
+      console.error("Failed to load gallery images:", error);
+    });
+    return () => unsub();
+  }, []);
+
+  const displayGallery = galleryImages.length > 0 ? galleryImages.slice(0, 5) : GALLERY_IMAGES.slice(0, 5);
+
   const displayCampaigns = campaigns.length > 0 ? campaigns : CAMPAIGNS;
 
   // Fetch videos from Firestore
   useEffect(() => {
-    const vq = query(
-      collection(db, 'videos'),
-      where('isActive', '!=', false),
-      orderBy('isActive'),
-      orderBy('createdAt', 'desc')
-    );
+    const vq = query(collection(db, 'videos'));
     const unsubVideos = onSnapshot(vq, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Video));
-      setVideos(data);
-      // Get the 2 most recent videos
-      setRecentVideos(data.slice(0, 2));
+      const activeVideos = data.filter(v => v.isActive !== false);
+      activeVideos.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+      setVideos(activeVideos);
+      setRecentVideos(activeVideos.slice(0, 2));
+    }, (error) => {
+      console.error("Failed to load videos from Firestore:", error);
     });
 
     return () => unsubVideos();
@@ -71,17 +102,19 @@ export function HomeView() {
 
   // Fetch audio tracks from Firestore
   useEffect(() => {
-    const aq = query(
-      collection(db, 'audio'),
-      where('isActive', '!=', false),
-      orderBy('isActive'),
-      orderBy('createdAt', 'desc')
-    );
+    const aq = query(collection(db, 'audio'));
     const unsubAudio = onSnapshot(aq, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as AudioTrack));
-      setAudioTracks(data);
-      // Get the 2 most recent audio tracks
-      setRecentAudio(data.slice(0, 2));
+      const activeAudios = data.filter((track) => track.isActive !== false);
+      activeAudios.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+      setAudioTracks(activeAudios);
+      setRecentAudio(activeAudios.slice(0, 2));
+    }, (error) => {
+      console.error("Failed to load audio tracks from Firestore:", error);
     });
 
     return () => unsubAudio();
@@ -196,6 +229,32 @@ export function HomeView() {
               <ScrollReveal key={track.id} delay={i * 0.05}>
                 <AudioCard track={track} />
               </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Gallery Highlights */}
+      {displayGallery.length > 0 && (
+        <div className="mt-8">
+          <SectionHeader title="Gallery Highlights" action="Explore More" onAction={() => navigateTo('gallery')} />
+          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
+            {displayGallery.map((img) => (
+              <div
+                key={img.id}
+                onClick={() => navigateTo('gallery')}
+                className="w-[140px] flex-shrink-0 snap-start relative group rounded-xl overflow-hidden cursor-pointer shadow-sm border"
+                style={{ borderColor: 'var(--border-color)', background: 'var(--bg-secondary)' }}
+              >
+                <div className="aspect-square w-full">
+                  <img src={img.imageURL} alt={img.caption} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                </div>
+                {img.caption && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                    <p className="text-white text-[10px] line-clamp-1">{img.caption}</p>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>

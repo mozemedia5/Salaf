@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Tag, Link2, BookOpen } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Article } from '@/types';
@@ -11,6 +12,7 @@ const CATEGORIES = ['Quran', 'Hadith', 'Fiqh', 'Seerah', 'Aqeedah', 'Dua', 'Rama
 
 export function ArticleManagement() {
   const { articles, setArticles } = useAdminStore();
+  const { adminProfile, isSuperAdmin } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
@@ -31,7 +33,11 @@ export function ArticleManagement() {
     return () => unsub();
   }, []);
 
-  const filtered = articles.filter(a =>
+  const visibleArticles = isSuperAdmin
+    ? articles
+    : articles.filter(a => a.createdBy === adminProfile?.id);
+
+  const filtered = visibleArticles.filter(a =>
     a.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     a.authorName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -43,6 +49,7 @@ export function ArticleManagement() {
       const data = {
         ...formData,
         featuredImageUrl: formData.featuredImageURL,
+        createdBy: editingArticle ? (editingArticle.createdBy || adminProfile?.id || '') : (adminProfile?.id || ''),
         updatedAt: serverTimestamp(),
         createdAt: editingArticle ? undefined : serverTimestamp()
       };
@@ -62,6 +69,12 @@ export function ArticleManagement() {
   };
 
   const handleDelete = async (id: string) => {
+    const articleToDelete = articles.find(a => a.id === id);
+    if (!articleToDelete) return;
+    if (!isSuperAdmin && articleToDelete.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to delete this article.");
+      return;
+    }
     if (!confirm('Delete this article?')) return;
     await deleteDoc(doc(db, 'articles', id));
   };
@@ -74,6 +87,10 @@ export function ArticleManagement() {
   };
 
   const openEdit = (article: Article) => {
+    if (!isSuperAdmin && article.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to edit this article.");
+      return;
+    }
     setEditingArticle(article);
     setFormData({
       title: article.title || '', excerpt: article.excerpt || '', content: article.content || '',

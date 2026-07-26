@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, CheckCircle } from 'lucide-react';
 import { CampaignCard } from '@/components/cards/CampaignCard';
@@ -6,16 +6,45 @@ import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';
 import { CAMPAIGNS } from '@/lib/data';
 import { formatCurrency } from '@/lib/utils';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Campaign } from '@/types';
 
 const PRESET_AMOUNTS = ['$10', '$25', '$50', '$100', '$250', '$500'];
 
 export function DonationView() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedAmount, setSelectedAmount] = useState<string | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
   const [donationHistory] = useState([
     { campaign: 'Community Mosque Renovation', amount: 5000, date: '2026-07-01', status: 'completed' as const },
     { campaign: 'Quran Distribution Program', amount: 2500, date: '2026-06-15', status: 'completed' as const },
   ]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'campaigns'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Campaign[];
+
+      // Sort in-memory by createdAt descending
+      list.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+
+      setCampaigns(list.length > 0 ? list : CAMPAIGNS);
+    }, (error) => {
+      console.error("Failed to load campaigns, using fallbacks:", error);
+      setCampaigns(CAMPAIGNS);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const displayCampaigns = campaigns.length > 0 ? campaigns : CAMPAIGNS;
 
   if (showThankYou) {
     return (
@@ -63,7 +92,9 @@ export function DonationView() {
     <div className="pb-4">
       {/* Featured Campaign */}
       <div className="px-4 pt-2">
-        <CampaignCard campaign={CAMPAIGNS[0]} featured />
+        {displayCampaigns.length > 0 && (
+          <CampaignCard campaign={displayCampaigns[0]} featured />
+        )}
       </div>
 
       {/* Quick Donate */}
@@ -99,14 +130,16 @@ export function DonationView() {
       </div>
 
       {/* Other Campaigns */}
-      <div className="mt-8 px-4 space-y-3">
-        <SectionHeader title="Other Campaigns" />
-        {CAMPAIGNS.slice(1).map((campaign) => (
-          <ScrollReveal key={campaign.id}>
-            <CampaignCard campaign={campaign} />
-          </ScrollReveal>
-        ))}
-      </div>
+      {displayCampaigns.length > 1 && (
+        <div className="mt-8 px-4 space-y-3">
+          <SectionHeader title="Other Campaigns" />
+          {displayCampaigns.slice(1).map((campaign) => (
+            <ScrollReveal key={campaign.id}>
+              <CampaignCard campaign={campaign} />
+            </ScrollReveal>
+          ))}
+        </div>
+      )}
 
       {/* Donation History */}
       <div className="mt-8 px-4">

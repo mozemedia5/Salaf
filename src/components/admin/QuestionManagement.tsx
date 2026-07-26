@@ -9,7 +9,7 @@ import type { UserQuestion } from '@/types';
 
 export function QuestionManagement() {
   const { questions, setQuestions } = useAdminStore();
-  const { adminProfile } = useAdminAuth();
+  const { adminProfile, isSuperAdmin } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'answered'>('all');
   const [selectedQuestion, setSelectedQuestion] = useState<UserQuestion | null>(null);
@@ -52,6 +52,10 @@ export function QuestionManagement() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!isSuperAdmin) {
+      alert("Only the super administrator can delete questions.");
+      return;
+    }
     if (!confirm('Delete this question?')) return;
     await deleteDoc(doc(db, 'questions', id));
   };
@@ -103,7 +107,9 @@ export function QuestionManagement() {
                       {q.status}
                     </span>
                   </div>
-                  <button onClick={() => handleDelete(q.id)} className="p-1 text-red-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                  {isSuperAdmin && (
+                    <button onClick={() => handleDelete(q.id)} className="p-1 text-red-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
                   <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-muted)' }}><Mail className="w-3 h-3" />{q.userEmail}</span>

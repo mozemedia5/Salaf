@@ -47,6 +47,15 @@ export function BannerCarousel() {
     return () => unsubscribe();
   }, []);
 
+  // Automated rotation: auto-rotate every 5 seconds
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [banners.length]);
+
   // Reset the expanded details panel whenever the active banner changes.
   useEffect(() => {
     setExpanded(false);
@@ -100,9 +109,24 @@ export function BannerCarousel() {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
-                <div>
-                  <h3 className="text-white font-heading font-bold text-2xl">{currentBanner.title}</h3>
-                  <p className="text-white/80 text-sm mt-1">{currentBanner.category}</p>
+                <div className="w-full flex items-end justify-between gap-4">
+                  <div>
+                    <h3 className="text-white font-heading font-bold text-2xl">{currentBanner.title}</h3>
+                    <p className="text-white/80 text-sm mt-1">{currentBanner.category}</p>
+                  </div>
+                  {hasDetails && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpanded((prev) => !prev);
+                      }}
+                      className="flex-shrink-0 px-4 py-2 bg-emerald-600/90 hover:bg-emerald-700/90 text-white rounded-full text-xs font-semibold shadow-md transition-colors flex items-center gap-1"
+                    >
+                      <span>{expanded ? 'Show Less' : 'Read More'}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
                 </div>
               </div>
             </button>

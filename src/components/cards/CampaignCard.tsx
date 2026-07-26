@@ -14,16 +14,22 @@ export function CampaignCard({ campaign, featured = false, className }: Campaign
   const [showDonate, setShowDonate] = useState(false);
   const percentage = getPercentage(campaign.raisedAmount, campaign.targetAmount);
 
+  const isCompleted = percentage >= 100 || campaign.raisedAmount >= campaign.targetAmount;
+
   if (featured) {
     return (
       <GlassCard className={`overflow-hidden p-0 border-amber-200/50 dark:border-amber-800/30 ${className}`} noPadding>
         <div className="relative">
           <img src={campaign.imageURL} alt={campaign.title} className="w-full aspect-video object-cover" />
-          {campaign.isUrgent && (
+          {isCompleted ? (
+            <span className="absolute top-3 right-3 bg-emerald-500 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md">
+              Completed
+            </span>
+          ) : campaign.isUrgent ? (
             <span className="absolute top-3 right-3 bg-red-500 text-white text-xs px-3 py-1 rounded-full font-semibold animate-pulse">
               Urgent
             </span>
-          )}
+          ) : null}
         </div>
         <div className="p-5">
           <h3 className="font-heading font-bold text-xl" style={{ color: 'var(--text-primary)' }}>{campaign.title}</h3>
@@ -32,7 +38,7 @@ export function CampaignCard({ campaign, featured = false, className }: Campaign
             <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full gradient-gold transition-all duration-1000"
-                style={{ width: `${percentage}%` }}
+                style={{ width: `${Math.min(percentage, 100)}%` }}
               />
             </div>
             <div className="flex items-center justify-between mt-2">
@@ -47,14 +53,32 @@ export function CampaignCard({ campaign, featured = false, className }: Campaign
             </div>
             <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{campaign.donorCount} donors</p>
           </div>
-          <button
-            onClick={() => setShowDonate(!showDonate)}
-            className="w-full mt-4 py-3 rounded-xl gradient-gold text-white font-semibold flex items-center justify-center gap-2 shadow-glow-gold animate-pulse-glow transition-transform active:scale-[0.98]"
-          >
-            <Heart className="w-5 h-5 fill-white" />
-            Donate Now
-          </button>
-          {showDonate && (
+
+          {isCompleted ? (
+            <div className="mt-4 space-y-3">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-center font-bold text-sm border border-emerald-200 dark:border-emerald-800/30 shadow-sm">
+                ✨ Goal Reached! Campaign Completed ✨
+              </div>
+              <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/50">
+                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  🎉 Campaign Review & Impact Updates
+                </p>
+                <p className="text-xs mt-1.5 italic leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  Review: {campaign.completedReview || "Alhamdulilah! This project has been successfully completed thanks to your generous support. The community has now been utilizing the services/mosque. May Allah reward all the donors abundantly."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowDonate(!showDonate)}
+              className="w-full mt-4 py-3 rounded-xl gradient-gold text-white font-semibold flex items-center justify-center gap-2 shadow-glow-gold animate-pulse-glow transition-transform active:scale-[0.98]"
+            >
+              <Heart className="w-5 h-5 fill-white" />
+              Donate Now
+            </button>
+          )}
+
+          {!isCompleted && showDonate && (
             <div className="mt-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
               <p className="text-sm font-medium text-center" style={{ color: 'var(--text-primary)' }}>Choose an amount:</p>
               <div className="grid grid-cols-3 gap-2 mt-3">
@@ -78,15 +102,27 @@ export function CampaignCard({ campaign, featured = false, className }: Campaign
     <GlassCard className={`flex gap-3 ${className}`}>
       <img src={campaign.imageURL} alt={campaign.title} className="w-20 h-20 flex-shrink-0 rounded-xl object-cover" />
       <div className="flex-1 min-w-0">
-        <h4 className="font-medium text-sm line-clamp-1" style={{ color: 'var(--text-primary)' }}>{campaign.title}</h4>
+        <div className="flex items-center justify-between gap-2">
+          <h4 className="font-medium text-sm line-clamp-1" style={{ color: 'var(--text-primary)' }}>{campaign.title}</h4>
+          {isCompleted && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 font-semibold flex-shrink-0">
+              Done
+            </span>
+          )}
+        </div>
         <p className="text-xs line-clamp-2 mt-0.5" style={{ color: 'var(--text-muted)' }}>{campaign.description}</p>
         <div className="mt-2">
           <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full rounded-full gradient-gold transition-all duration-1000" style={{ width: `${percentage}%` }} />
+            <div className="h-full rounded-full gradient-gold transition-all duration-1000" style={{ width: `${Math.min(percentage, 100)}%` }} />
           </div>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-            {formatCurrency(campaign.raisedAmount)} / {formatCurrency(campaign.targetAmount)}
-          </p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              {formatCurrency(campaign.raisedAmount)} / {formatCurrency(campaign.targetAmount)}
+            </p>
+            {isCompleted && (
+              <p className="text-[10px] text-emerald-500 font-medium">100% Completed</p>
+            )}
+          </div>
         </div>
       </div>
     </GlassCard>

@@ -56,6 +56,7 @@ export interface Article {
   evidences?: string[];
   links?: { title: string; url: string }[];
   isActive?: boolean;
+  createdBy?: string;
 }
 
 export interface GalleryImage {
@@ -66,6 +67,7 @@ export interface GalleryImage {
   category: string;
   favoriteCount: number;
   uploadedBy?: string;
+  createdBy?: string;
   createdAt?: string;
 }
 
@@ -82,6 +84,7 @@ export interface Campaign {
   createdBy?: string;
   createdAt?: string;
   isActive?: boolean;
+  completedReview?: string;
 }
 
 export interface Scholar {

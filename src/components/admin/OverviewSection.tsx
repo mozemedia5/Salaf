@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, FileText, MessageCircle, Users, Eye, Heart, Bell } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -14,6 +15,7 @@ const statCards = [
 
 export function OverviewSection() {
   const { videos, articles, questions, admins, setVideos, setArticles, setQuestions, setAdmins, setCampaigns, setNotifications } = useAdminStore();
+  const { adminProfile, isSuperAdmin } = useAdminAuth();
 
   useEffect(() => {
     // Subscribe to all collections
@@ -40,9 +42,17 @@ export function OverviewSection() {
     return () => unsubscribers.forEach(u => u());
   }, []);
 
+  const visibleVideos = isSuperAdmin
+    ? videos
+    : videos.filter((v: any) => v.createdBy === adminProfile?.id);
+
+  const visibleArticles = isSuperAdmin
+    ? articles
+    : articles.filter((a: any) => a.createdBy === adminProfile?.id);
+
   const stats = {
-    totalVideos: videos.length,
-    totalArticles: articles.length,
+    totalVideos: visibleVideos.length,
+    totalArticles: visibleArticles.length,
     totalQuestions: questions.length,
     pendingQuestions: questions.filter((q: any) => q.status === 'pending').length,
     totalAdmins: admins.length,
@@ -140,7 +150,7 @@ export function OverviewSection() {
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Total Video Views</span>
               </div>
               <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                {videos.reduce((sum: number, v: any) => sum + (v.viewCount || 0), 0).toLocaleString()}
+                {visibleVideos.reduce((sum: number, v: any) => sum + (v.viewCount || 0), 0).toLocaleString()}
               </span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
@@ -151,7 +161,7 @@ export function OverviewSection() {
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Total Video Likes</span>
               </div>
               <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                {videos.reduce((sum: number, v: any) => sum + (v.likes || 0), 0).toLocaleString()}
+                {visibleVideos.reduce((sum: number, v: any) => sum + (v.likes || 0), 0).toLocaleString()}
               </span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Trash2, Search, X, Image, Upload } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { collection, query, onSnapshot, deleteDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { GalleryImage } from '@/types';
@@ -11,6 +12,7 @@ const CATEGORIES = ['Architecture', 'Nature', 'Calligraphy', 'Lifestyle', 'Event
 
 export function GalleryManagement() {
   const { galleryImages, setGalleryImages } = useAdminStore();
+  const { adminProfile, isSuperAdmin } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ imageURL: '', caption: '', category: 'Architecture' });
@@ -25,7 +27,11 @@ export function GalleryManagement() {
     return () => unsub();
   }, []);
 
-  const filtered = galleryImages.filter(g => g.caption?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const visibleImages = isSuperAdmin
+    ? galleryImages
+    : galleryImages.filter(g => g.uploadedBy === adminProfile?.id || g.createdBy === adminProfile?.id);
+
+  const filtered = visibleImages.filter(g => g.caption?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleSave = async () => {
     if (!formData.imageURL || !formData.caption) return;
@@ -37,6 +43,8 @@ export function GalleryManagement() {
         thumbnailURL: formData.imageURL,
         thumbnailUrl: formData.imageURL,
         favoriteCount: 0,
+        uploadedBy: adminProfile?.id || '',
+        createdBy: adminProfile?.id || '',
         createdAt: serverTimestamp(),
       });
       setShowModal(false);
@@ -49,6 +57,12 @@ export function GalleryManagement() {
   };
 
   const handleDelete = async (id: string) => {
+    const imageToDelete = galleryImages.find(g => g.id === id);
+    if (!imageToDelete) return;
+    if (!isSuperAdmin && imageToDelete.uploadedBy !== adminProfile?.id && imageToDelete.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to delete this image.");
+      return;
+    }
     if (!confirm('Delete this image?')) return;
     await deleteDoc(doc(db, 'gallery', id));
   };

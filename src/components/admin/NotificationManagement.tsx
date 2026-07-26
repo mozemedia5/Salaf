@@ -17,7 +17,7 @@ const NOTIFICATION_TYPES = [
 
 export function NotificationManagement() {
   const { notifications, setNotifications } = useAdminStore();
-  const { adminProfile } = useAdminAuth();
+  const { adminProfile, isSuperAdmin } = useAdminAuth();
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     type: 'announcement' as Notification['type'],
@@ -57,7 +57,17 @@ export function NotificationManagement() {
     }
   };
 
+  const visibleNotifications = isSuperAdmin
+    ? notifications
+    : notifications.filter(n => n.createdBy === adminProfile?.id);
+
   const handleDelete = async (id: string) => {
+    const notifToDelete = notifications.find(n => n.id === id);
+    if (!notifToDelete) return;
+    if (!isSuperAdmin && notifToDelete.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to delete this notification.");
+      return;
+    }
     if (!confirm('Delete this notification?')) return;
     await deleteDoc(doc(db, 'notifications', id));
   };
@@ -82,7 +92,7 @@ export function NotificationManagement() {
       </div>
 
       <div className="space-y-3">
-        {notifications.map((notif, i) => (
+        {visibleNotifications.map((notif, i) => (
           <motion.div key={notif.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
             className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
             <div className="flex items-start gap-3">

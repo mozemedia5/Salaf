@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Play, Eye, Heart, Search, X } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,7 @@ const CATEGORIES = ['Quran', 'Hadith', 'Fiqh', 'Seerah', 'Aqeedah', 'Dua', 'Rama
 
 export function VideoManagement() {
   const { videos, setVideos } = useAdminStore();
+  const { adminProfile, isSuperAdmin } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
@@ -48,7 +50,11 @@ export function VideoManagement() {
     return () => unsub();
   }, []);
 
-  const filteredVideos = videos.filter(v =>
+  const visibleVideos = isSuperAdmin
+    ? videos
+    : videos.filter(v => v.createdBy === adminProfile?.id);
+
+  const filteredVideos = visibleVideos.filter(v =>
     v.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     v.scholarName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -74,6 +80,7 @@ export function VideoManagement() {
         tiktokId: formData.videoType === 'tiktok' ? videoId : '',
         viewCount: editingVideo?.viewCount || 0,
         likes: editingVideo?.likes || 0,
+        createdBy: editingVideo ? (editingVideo.createdBy || adminProfile?.id || '') : (adminProfile?.id || ''),
         updatedAt: serverTimestamp(),
         createdAt: editingVideo ? undefined : serverTimestamp(),
       };
@@ -95,11 +102,21 @@ export function VideoManagement() {
   };
 
   const handleDelete = async (id: string) => {
+    const videoToDelete = videos.find(v => v.id === id);
+    if (!videoToDelete) return;
+    if (!isSuperAdmin && videoToDelete.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to delete this video.");
+      return;
+    }
     if (!confirm('Delete this video?')) return;
     await deleteDoc(doc(db, 'videos', id));
   };
 
   const handleToggleActive = async (video: Video) => {
+    if (!isSuperAdmin && video.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to edit this video.");
+      return;
+    }
     await updateDoc(doc(db, 'videos', video.id), {
       isActive: !video.isActive,
       updatedAt: serverTimestamp(),
@@ -107,6 +124,10 @@ export function VideoManagement() {
   };
 
   const openEditModal = (video: Video) => {
+    if (!isSuperAdmin && video.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to edit this video.");
+      return;
+    }
     setEditingVideo(video);
     setFormData({
       title: video.title || '',

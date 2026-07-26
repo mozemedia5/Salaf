@@ -3,12 +3,14 @@ import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Heart, Target, Users } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Campaign } from '@/types';
 
 export function DonationManagement() {
   const { campaigns, setCampaigns } = useAdminStore();
+  const { adminProfile, isSuperAdmin } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
@@ -24,7 +26,11 @@ export function DonationManagement() {
     return () => unsub();
   }, []);
 
-  const filtered = campaigns.filter(c => c.title?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const visibleCampaigns = isSuperAdmin
+    ? campaigns
+    : campaigns.filter(c => c.createdBy === adminProfile?.id);
+
+  const filtered = visibleCampaigns.filter(c => c.title?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleSave = async () => {
     if (!formData.title || !formData.description || !formData.targetAmount) return;
@@ -41,6 +47,7 @@ export function DonationManagement() {
         isUrgent: formData.isUrgent,
         isFeatured: formData.isFeatured,
         isActive: true,
+        createdBy: editingCampaign ? (editingCampaign.createdBy || adminProfile?.id || '') : (adminProfile?.id || ''),
         updatedAt: serverTimestamp(),
         createdAt: editingCampaign ? undefined : serverTimestamp(),
       };
@@ -60,11 +67,21 @@ export function DonationManagement() {
   };
 
   const handleDelete = async (id: string) => {
+    const campaignToDelete = campaigns.find(c => c.id === id);
+    if (!campaignToDelete) return;
+    if (!isSuperAdmin && campaignToDelete.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to delete this campaign.");
+      return;
+    }
     if (!confirm('Delete this campaign?')) return;
     await deleteDoc(doc(db, 'campaigns', id));
   };
 
   const openEdit = (campaign: Campaign) => {
+    if (!isSuperAdmin && campaign.createdBy !== adminProfile?.id) {
+      alert("You do not have permission to edit this campaign.");
+      return;
+    }
     setEditingCampaign(campaign);
     setFormData({
       title: campaign.title, description: campaign.description,

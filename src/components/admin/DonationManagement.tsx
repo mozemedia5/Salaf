@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Heart, Target, Users } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Campaign } from '@/types';
@@ -13,6 +14,7 @@ export function DonationManagement() {
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [formData, setFormData] = useState({ title: '', description: '', imageURL: '', targetAmount: '', isUrgent: false, isFeatured: false });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'campaigns'));
@@ -32,6 +34,7 @@ export function DonationManagement() {
         title: formData.title,
         description: formData.description,
         imageURL: formData.imageURL || '/images/campaign-1.jpg',
+        campaignImageUrl: formData.imageURL || '/images/campaign-1.jpg',
         targetAmount: Number(formData.targetAmount),
         raisedAmount: editingCampaign?.raisedAmount || 0,
         donorCount: editingCampaign?.donorCount || 0,
@@ -143,9 +146,14 @@ export function DonationManagement() {
               <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Description *" rows={4}
                 className="w-full px-4 py-3 rounded-xl border text-sm outline-none focus:border-emerald-500 resize-none"
                 style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
-              <input type="text" value={formData.imageURL} onChange={(e) => setFormData({ ...formData, imageURL: e.target.value })} placeholder="Image URL"
-                className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
-                style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
+              <ImageUploadField
+                folder="salaf/campaigns"
+                uploadPreset="salaf_campaigns"
+                label="Campaign Image"
+                currentImageUrl={formData.imageURL}
+                onUploaded={(url) => setFormData({ ...formData, imageURL: url })}
+                onUploadStateChange={setUploading}
+              />
               <input type="number" value={formData.targetAmount} onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })} placeholder="Target amount ($) *"
                 className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
                 style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
@@ -159,7 +167,7 @@ export function DonationManagement() {
                   <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Featured</span>
                 </label>
               </div>
-              <button onClick={handleSave} disabled={saving || !formData.title || !formData.description || !formData.targetAmount}
+              <button onClick={handleSave} disabled={saving || uploading || !formData.title || !formData.description || !formData.targetAmount}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow disabled:opacity-50">
                 {saving ? 'Saving...' : editingCampaign ? 'Update' : 'Create Campaign'}
               </button>

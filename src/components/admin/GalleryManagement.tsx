@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Search, X, Image, Upload } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
 import { collection, query, onSnapshot, deleteDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { GalleryImage } from '@/types';
@@ -14,6 +15,7 @@ export function GalleryManagement() {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ imageURL: '', caption: '', category: 'Architecture' });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'gallery'));
@@ -31,7 +33,9 @@ export function GalleryManagement() {
     try {
       await addDoc(collection(db, 'gallery'), {
         ...formData,
+        imageUrl: formData.imageURL,
         thumbnailURL: formData.imageURL,
+        thumbnailUrl: formData.imageURL,
         favoriteCount: 0,
         createdAt: serverTimestamp(),
       });
@@ -102,12 +106,14 @@ export function GalleryManagement() {
               <button onClick={() => setShowModal(false)} className="p-1"><X className="w-5 h-5" style={{ color: 'var(--text-muted)' }} /></button>
             </div>
             <div className="space-y-4">
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>Image URL *</label>
-                <input type="text" value={formData.imageURL} onChange={(e) => setFormData({ ...formData, imageURL: e.target.value })} placeholder="https://..."
-                  className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
-                  style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
-              </div>
+              <ImageUploadField
+                folder="salaf/gallery"
+                uploadPreset="salaf_gallery"
+                label="Gallery Image *"
+                currentImageUrl={formData.imageURL}
+                onUploaded={(url) => setFormData({ ...formData, imageURL: url })}
+                onUploadStateChange={setUploading}
+              />
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>Caption *</label>
                 <input type="text" value={formData.caption} onChange={(e) => setFormData({ ...formData, caption: e.target.value })} placeholder="Image description"
@@ -122,7 +128,7 @@ export function GalleryManagement() {
                   {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <button onClick={handleSave} disabled={saving || !formData.imageURL || !formData.caption}
+              <button onClick={handleSave} disabled={saving || uploading || !formData.imageURL || !formData.caption}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow disabled:opacity-50 flex items-center justify-center gap-2">
                 <Upload className="w-4 h-4" /> {saving ? 'Adding...' : 'Add Image'}
               </button>

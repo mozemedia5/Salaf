@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, CheckCircle, AlertCircle, Lock, Eye, EyeOff, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -13,17 +14,20 @@ export function EditProfileModal({ isOpen, onClose, mode }: EditProfileModalProp
   const { user, updateUserProfile, updateUserPassword, error: authError } = useAuth();
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
   const [address, setAddress] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || '');
+      setPhotoURL(user.photoURL || '');
       setAddress('');
     }
   }, [user]);
@@ -46,7 +50,26 @@ export function EditProfileModal({ isOpen, onClose, mode }: EditProfileModalProp
     setLoading(true);
     try {
       if (mode === 'profile') {
-        await updateUserProfile(displayName, undefined);
+        await updateUserProfile(displayName, photoURL);
+
+        // Update Firestore admin document if they are an admin
+        if (user?.uid) {
+          try {
+            const { doc, getDoc, updateDoc } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            const adminDocRef = doc(db, 'admins', user.uid);
+            const adminSnap = await getDoc(adminDocRef);
+            if (adminSnap.exists()) {
+              await updateDoc(adminDocRef, {
+                photoURL: photoURL,
+                profileImageUrl: photoURL,
+              });
+            }
+          } catch (fsErr) {
+            console.error('Failed to update admin profile in Firestore:', fsErr);
+          }
+        }
+
         setSubmitted(true);
         setTimeout(() => {
           setSubmitted(false);
@@ -124,12 +147,15 @@ export function EditProfileModal({ isOpen, onClose, mode }: EditProfileModalProp
               {mode === 'profile' ? (
                 <>
                   <div className="flex justify-center mb-6">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-emerald-500">
-                        <div className="w-full h-full gradient-emerald flex items-center justify-center">
-                          <User className="w-8 h-8 text-white" />
-                        </div>
-                      </div>
+                    <div className="w-32">
+                      <ImageUploadField
+                        folder="salaf/profiles"
+                        uploadPreset="salaf_profiles"
+                        label="Profile Picture"
+                        currentImageUrl={photoURL}
+                        onUploaded={(url) => setPhotoURL(url)}
+                        onUploadStateChange={setUploading}
+                      />
                     </div>
                   </div>
 
@@ -194,7 +220,7 @@ export function EditProfileModal({ isOpen, onClose, mode }: EditProfileModalProp
 
               <button
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || uploading}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow hover:shadow-lg transition-shadow active:scale-[0.98] disabled:opacity-70 mt-6"
               >
                 {loading ? 'Saving...' : 'Save Changes'}

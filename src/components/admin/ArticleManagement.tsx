@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Tag, Link2, BookOpen } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Article } from '@/types';
@@ -20,6 +21,7 @@ export function ArticleManagement() {
     title: '', excerpt: '', content: '', featuredImageURL: '', authorName: '', category: 'Quran', readingTime: '', tags: [] as string[], evidences: [] as string[], links: [] as { title: string; url: string }[], isActive: true,
   });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'articles'));
@@ -38,7 +40,12 @@ export function ArticleManagement() {
     if (!formData.title || !formData.content) return;
     setSaving(true);
     try {
-      const data = { ...formData, updatedAt: serverTimestamp(), createdAt: editingArticle ? undefined : serverTimestamp() };
+      const data = {
+        ...formData,
+        featuredImageUrl: formData.featuredImageURL,
+        updatedAt: serverTimestamp(),
+        createdAt: editingArticle ? undefined : serverTimestamp()
+      };
       if (editingArticle) {
         await updateDoc(doc(db, 'articles', editingArticle.id), data);
       } else {
@@ -174,9 +181,14 @@ export function ArticleManagement() {
                 <input type="text" value={formData.readingTime} onChange={(e) => setFormData({ ...formData, readingTime: e.target.value })} placeholder="Reading time (e.g., 5 min)"
                   className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
                   style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
-                <input type="text" value={formData.featuredImageURL} onChange={(e) => setFormData({ ...formData, featuredImageURL: e.target.value })} placeholder="Featured image URL"
-                  className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
-                  style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
+                <ImageUploadField
+                  folder="salaf/articles"
+                  uploadPreset="salaf_gallery"
+                  label="Featured Image"
+                  currentImageUrl={formData.featuredImageURL}
+                  onUploaded={(url) => setFormData({ ...formData, featuredImageURL: url })}
+                  onUploadStateChange={setUploading}
+                />
               </div>
 
               {/* Tags */}
@@ -220,7 +232,7 @@ export function ArticleManagement() {
                 </div>
               </div>
 
-              <button onClick={handleSave} disabled={saving || !formData.title || !formData.content}
+              <button onClick={handleSave} disabled={saving || uploading || !formData.title || !formData.content}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow disabled:opacity-50">
                 {saving ? 'Saving...' : editingArticle ? 'Update Article' : 'Add Article'}
               </button>

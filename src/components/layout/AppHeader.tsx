@@ -26,7 +26,7 @@ const VIEW_TITLES: Record<ViewId, string> = {
 const SHOW_BACK: ViewId[] = ['article-detail', 'video-player', 'audio-player', 'notifications', 'search', 'privacy-policy', 'terms-of-service', 'user-questions', 'gallery', 'articles'];
 
 export function AppHeader() {
-  const { currentView, navigateTo, goBack, toggleSearch } = useNavigationStore();
+  const { currentView, navigateTo, goBack, toggleSearch, unreadNotifications } = useNavigationStore();
   const { theme, toggleTheme } = useThemeStore();
   const { showInstall, handleInstallClick } = usePWAInstall();
   const title = VIEW_TITLES[currentView] || '';
@@ -87,6 +87,11 @@ export function AppHeader() {
           className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
         >
           <Bell className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
+          {unreadNotifications > 0 && (
+            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-gray-900">
+              {unreadNotifications > 9 ? '9+' : unreadNotifications}
+            </span>
+          )}
         </button>
       </div>
     </div>

@@ -1,12 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Share2, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { GALLERY_IMAGES } from '@/lib/data';
+import { Heart, Share2, X, ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { GalleryImage } from '@/types';
 
 export function GalleryView() {
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const q = query(collection(db, 'gallery'));
+    const unsub = onSnapshot(q, (snap) => {
+      const images = snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryImage));
+      setGalleryImages(images);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching gallery:', error);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
 
   const toggleFavorite = (id: string) => {
     setFavorites(prev => {
@@ -16,10 +34,30 @@ export function GalleryView() {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (galleryImages.length === 0) {
+    return (
+      <div className="text-center py-20 px-4">
+        <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-4">
+          <ImageIcon className="w-8 h-8 text-emerald-500" />
+        </div>
+        <h3 className="font-heading font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>Empty Gallery</h3>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>There are no gallery photos uploaded yet. Check back later!</p>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-4 px-4">
       <div className="columns-2 gap-2 space-y-2">
-        {GALLERY_IMAGES.map((img, i) => (
+        {galleryImages.map((img, i) => (
           <ScrollReveal key={img.id} delay={i * 0.05}>
             <div
               className="break-inside-avoid relative group cursor-pointer rounded-xl overflow-hidden"
@@ -33,7 +71,21 @@ export function GalleryView() {
                 >
                   <Heart className={`w-5 h-5 ${favorites.has(img.id) ? 'text-red-500 fill-red-500' : 'text-gray-700'}`} />
                 </button>
-                <button className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center transition-transform hover:scale-110">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (navigator.share) {
+                      navigator.share({
+                        title: img.caption,
+                        url: img.imageURL
+                      }).catch(console.error);
+                    } else {
+                      navigator.clipboard.writeText(img.imageURL || '');
+                      alert('Image link copied to clipboard!');
+                    }
+                  }}
+                  className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center transition-transform hover:scale-110"
+                >
                   <Share2 className="w-5 h-5 text-gray-700" />
                 </button>
               </div>
@@ -68,7 +120,7 @@ export function GalleryView() {
             </button>
             <button
               className="absolute right-4 top-1/2 -translate-y-1/2 p-2 z-10"
-              onClick={(e) => { e.stopPropagation(); setLightboxIndex(Math.min(GALLERY_IMAGES.length - 1, lightboxIndex + 1)); }}
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(Math.min(galleryImages.length - 1, lightboxIndex + 1)); }}
             >
               <ChevronRight className="w-8 h-8 text-white" />
             </button>
@@ -76,14 +128,14 @@ export function GalleryView() {
               key={lightboxIndex}
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              src={GALLERY_IMAGES[lightboxIndex].imageURL}
+              src={galleryImages[lightboxIndex].imageURL}
               alt=""
               className="max-w-[95%] max-h-[85%] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
             <div className="absolute bottom-6 left-0 right-0 text-center">
-              <p className="text-white text-sm">{GALLERY_IMAGES[lightboxIndex].caption}</p>
-              <p className="text-gray-400 text-xs mt-1">{lightboxIndex + 1} / {GALLERY_IMAGES.length}</p>
+              <p className="text-white text-sm">{galleryImages[lightboxIndex].caption}</p>
+              <p className="text-gray-400 text-xs mt-1">{lightboxIndex + 1} / {galleryImages.length}</p>
             </div>
           </motion.div>
         )}

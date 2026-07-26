@@ -17,7 +17,7 @@ export function AudioUploadField({
   uploadPreset,
   label,
   onUploaded,
-  accept = "audio/mp3,audio/wav,audio/x-m4a,audio/m4a,.mp3,.wav,.m4a",
+  accept = "*",
   currentAudioUrl = "",
   onUploadStateChange,
 }: AudioUploadFieldProps) {
@@ -48,16 +48,7 @@ export function AudioUploadField({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    const validExtensions = [".mp3", ".wav", ".m4a"];
-    const fileName = file.name.toLowerCase();
-    const isAudioType = file.type.startsWith("audio/") || validExtensions.some(ext => fileName.endsWith(ext));
-
-    if (!isAudioType) {
-      setError("Please select a valid audio file (.mp3, .wav, or .m4a).");
-      return;
-    }
-
+    // Bypassed file type restrictions as requested to support any upload format
     setError(null);
     setLoading(true);
     setProgress(0);

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { AudioCard } from "@/components/cards/AudioCard";
 import { CategoryChip } from "@/components/ui-custom/CategoryChip";
 import { ScrollReveal } from "@/components/ui-custom/ScrollReveal";
-import { AUDIO_TRACKS } from "@/lib/data";
 import { LayoutGrid, List as ListIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, onSnapshot } from "firebase/firestore";
@@ -51,17 +50,26 @@ export function AudioView() {
     };
   }, []);
 
-  // Use Firestore tracks if present, otherwise fallback to mock AUDIO_TRACKS
-  const displayTracks = audioTracks.length > 0 ? audioTracks : AUDIO_TRACKS;
-
   const filtered = activeCategory === "All"
-    ? displayTracks
-    : displayTracks.filter(a => a.category === activeCategory);
+    ? audioTracks
+    : audioTracks.filter(a => a.category === activeCategory);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (audioTracks.length === 0) {
+    return (
+      <div className="text-center py-20 px-4">
+        <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-4">
+          <LayoutGrid className="w-8 h-8 text-emerald-500" />
+        </div>
+        <h3 className="font-heading font-semibold text-lg" style={{ color: "var(--text-primary)" }}>No Audios Available</h3>
+        <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>There are no audio tracks available at this time.</p>
       </div>
     );
   }

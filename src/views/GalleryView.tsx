@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Share2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GALLERY_IMAGES } from '@/lib/data';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
+import { useNavigationStore } from '@/stores/navigationStore';
 
 export function GalleryView() {
+  const { goBack } = useNavigationStore();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
@@ -17,8 +19,17 @@ export function GalleryView() {
   };
 
   return (
-    <div className="pb-4 px-4">
-      <div className="columns-2 gap-2 space-y-2">
+    <div className="pb-4">
+      {/* Sticky Header with Back Button */}
+      <div className="sticky top-14 z-[100] glass-header px-4 py-3 flex items-center gap-3 mb-4">
+        <button onClick={goBack} className="p-2 -ml-2 rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+          <ChevronLeft className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
+        </button>
+        <h1 className="font-heading font-semibold" style={{ color: 'var(--text-primary)' }}>Inspirational Gallery</h1>
+      </div>
+
+      <div className="px-4">
+        <div className="columns-2 gap-2 space-y-2">
         {GALLERY_IMAGES.map((img, i) => (
           <ScrollReveal key={img.id} delay={i * 0.05}>
             <div
@@ -45,6 +56,7 @@ export function GalleryView() {
             </div>
           </ScrollReveal>
         ))}
+        </div>
       </div>
 
       {/* Lightbox */}

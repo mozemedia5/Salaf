@@ -14,10 +14,25 @@ export function BannerCarousel() {
   useEffect(() => {
     const q = query(collection(db, 'banners'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const bannerData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Banner[];
+      const now = new Date();
+      const bannerData = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Banner))
+        .filter(b => {
+          if (b.isActive === false) return false;
+          if (b.expiresAt) {
+            const expiryDate = new Date(b.expiresAt);
+            return expiryDate > now;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          const aTime = a.createdAt ? (typeof a.createdAt === 'object' && 'seconds' in a.createdAt ? (a.createdAt as any).seconds * 1000 : new Date(a.createdAt as any).getTime()) : 0;
+          const bTime = b.createdAt ? (typeof b.createdAt === 'object' && 'seconds' in b.createdAt ? (b.createdAt as any).seconds * 1000 : new Date(b.createdAt as any).getTime()) : 0;
+          return bTime - aTime;
+        });
       setBanners(bannerData);
       setLoading(false);
     });

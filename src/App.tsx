@@ -28,6 +28,7 @@ function App() {
   const setTheme = useThemeStore((s) => s.setTheme);
   const navigateTo = useNavigationStore((s) => s.navigateTo);
   const user = useAuthStore((s) => s.user);
+  const initAuth = useAuthStore((s) => s.initAuth);
 
   const prevQuestionsRef = useRef<Record<string, string>>({});
   const isFirstLoadQuestionsRef = useRef(true);
@@ -37,6 +38,11 @@ function App() {
 
   const prevNotifsRef = useRef<Record<string, boolean>>({});
   const isFirstLoadNotifsRef = useRef(true);
+
+  // Initialize Auth state listener globally
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

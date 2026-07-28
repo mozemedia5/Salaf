@@ -11,7 +11,6 @@ import { useAuthStore } from '@/stores/authStore';
 import type { AdminSection, AdminUser } from '@/types';
 import { OverviewSection } from '@/components/admin/OverviewSection';
 import { VideoManagement } from '@/components/admin/VideoManagement';
-import { AudioManagement } from '@/components/admin/AudioManagement';
 import { ArticleManagement } from '@/components/admin/ArticleManagement';
 import { GalleryManagement } from '@/components/admin/GalleryManagement';
 import { DonationManagement } from '@/components/admin/DonationManagement';

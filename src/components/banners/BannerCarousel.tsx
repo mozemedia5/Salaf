@@ -77,32 +77,32 @@ export function BannerCarousel() {
   };
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden mb-8" style={{ background: 'var(--bg-secondary)' }}>
-      <div className="relative w-full h-64 md:h-80 overflow-hidden">
+    <div className="relative w-full rounded-2xl overflow-hidden mb-8 shadow-md border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+      <div className="relative w-full overflow-hidden transition-all duration-500 ease-in-out">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0"
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.4, ease: 'easeInOut' }}
+            className="w-full h-auto"
           >
             <button
               type="button"
               onClick={handleBannerTap}
-              className={`absolute inset-0 w-full h-full text-left ${currentBanner.link ? 'cursor-pointer' : 'cursor-default'}`}
+              className={`relative block w-full h-auto text-left ${currentBanner.link ? 'cursor-pointer' : 'cursor-default'}`}
               aria-label={currentBanner.link ? `Open ${currentBanner.title}` : currentBanner.title}
             >
               <img
                 src={currentBanner.imageURL || (currentBanner as any).bannerImageUrl}
                 alt={currentBanner.title}
-                className="w-full h-full object-cover"
+                className="w-full h-auto object-cover rounded-2xl block"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
-                <div>
-                  <h3 className="text-white font-heading font-bold text-2xl">{currentBanner.title}</h3>
-                  <p className="text-white/80 text-sm mt-1">{currentBanner.category}</p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent flex items-end p-6 rounded-2xl">
+                <div className="pr-8">
+                  <h3 className="text-white font-heading font-bold text-xl md:text-2xl drop-shadow-md leading-tight">{currentBanner.title}</h3>
+                  <p className="text-white/90 text-xs md:text-sm mt-1 font-medium tracking-wide drop-shadow-sm uppercase">{currentBanner.category}</p>
                 </div>
               </div>
             </button>
@@ -113,26 +113,26 @@ export function BannerCarousel() {
         {banners.length > 1 && (
           <>
             <button
-              onClick={goToPrevious}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/20 hover:bg-white/40 transition-colors backdrop-blur-sm"
+              onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors backdrop-blur-sm"
             >
-              <ChevronLeft className="w-6 h-6 text-white" />
+              <ChevronLeft className="w-5 h-5 text-white" />
             </button>
             <button
-              onClick={goToNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/20 hover:bg-white/40 transition-colors backdrop-blur-sm"
+              onClick={(e) => { e.stopPropagation(); goToNext(); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors backdrop-blur-sm"
             >
-              <ChevronRight className="w-6 h-6 text-white" />
+              <ChevronRight className="w-5 h-5 text-white" />
             </button>
 
             {/* Dots Indicator */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
               {banners.map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => setCurrentIndex(index)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === currentIndex ? 'bg-white w-8' : 'bg-white/50'
+                  onClick={(e) => { e.stopPropagation(); setCurrentIndex(index); }}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentIndex ? 'bg-white w-6' : 'bg-white/40 w-1.5'
                   }`}
                 />
               ))}
@@ -143,12 +143,12 @@ export function BannerCarousel() {
         {/* Expand details toggle */}
         {hasDetails && (
           <button
-            onClick={() => setExpanded((prev) => !prev)}
-            className="absolute bottom-3 right-3 z-10 p-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors backdrop-blur-sm"
+            onClick={(e) => { e.stopPropagation(); setExpanded((prev) => !prev); }}
+            className="absolute bottom-3 right-3 z-10 p-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-colors backdrop-blur-sm"
             aria-label={expanded ? 'Hide details' : 'Show details'}
           >
             <motion.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex">
-              <ChevronDown className="w-5 h-5 text-white" />
+              <ChevronDown className="w-4 h-4 text-white" />
             </motion.span>
           </button>
         )}
@@ -164,7 +164,7 @@ export function BannerCarousel() {
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="p-4" style={{ borderTop: '1px solid var(--border-color)' }}>
+            <div className="p-4" style={{ borderTop: '1px solid var(--border-color)', background: 'rgba(0, 0, 0, 0.02)' }}>
               {currentBanner.description && (
                 <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{currentBanner.description}</p>
               )}
@@ -174,7 +174,7 @@ export function BannerCarousel() {
               {currentBanner.link && (
                 <button
                   onClick={handleBannerTap}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-500 hover:text-emerald-600 mt-3"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-500 hover:text-emerald-600 mt-3 animate-pulse"
                 >
                   Learn more →
                 </button>

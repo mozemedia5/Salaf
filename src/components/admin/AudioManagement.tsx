@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, Pencil, Trash2, Headphones, Search, X } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { ImageUploadField } from "@/components/ui-custom/ImageUploadField";
+import { AUDIO_PRESET_THUMBNAILS } from "@/lib/data";
+import { Check } from "lucide-react";
 import { AudioUploadField } from "@/components/ui-custom/AudioUploadField";
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -56,7 +57,6 @@ export function AudioManagement() {
   });
 
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
 
   useEffect(() => {
@@ -355,16 +355,37 @@ export function AudioManagement() {
                 </div>
               </div>
 
-              {/* Display Photo (thumbnailURL) using ImageUploadField */}
+              {/* Display Photo (thumbnailURL) using Presets */}
               <div>
-                <ImageUploadField
-                  folder="salaf/thumbnails"
-                  uploadPreset="salaf_thumbnails"
-                  label="Display Photo (Audio Thumbnail) *"
-                  currentImageUrl={formData.thumbnailURL}
-                  onUploaded={(url) => setFormData({ ...formData, thumbnailURL: url })}
-                  onUploadStateChange={setUploadingImage}
-                />
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Select Professional Audio Thumbnail *</label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-48 overflow-y-auto p-2 rounded-xl border animate-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-primary)" }}>
+                  {AUDIO_PRESET_THUMBNAILS.map((preset) => {
+                    const isSelected = formData.thumbnailURL === preset.url;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, thumbnailURL: preset.url })}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                          isSelected ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-transparent"
+                        }`}
+                        title={preset.name}
+                      >
+                        <img src={preset.url} alt={preset.name} className="w-full h-full object-cover" />
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+                            <span className="p-1 rounded-full bg-emerald-500 text-white">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {!formData.thumbnailURL && (
+                  <p className="text-[10px] text-amber-500 font-medium mt-1">Please select an audio thumbnail preset above.</p>
+                )}
               </div>
 
               {/* Audio Upload using AudioUploadField */}
@@ -399,7 +420,7 @@ export function AudioManagement() {
 
               <button
                 onClick={handleSave}
-                disabled={saving || uploadingImage || uploadingAudio || !formData.title || !formData.audioURL}
+                disabled={saving || uploadingAudio || !formData.title || !formData.audioURL || !formData.thumbnailURL}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow disabled:opacity-50 transition-all"
               >
                 {saving ? "Saving..." : editingTrack ? "Update Audio Track" : "Add Audio Track"}

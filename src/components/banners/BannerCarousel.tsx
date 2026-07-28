@@ -6,9 +6,25 @@ import { collection, onSnapshot, query } from 'firebase/firestore';
 import { BANNERS } from '@/lib/data';
 import type { Banner } from '@/types';
 
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction < 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+};
+
 export function BannerCarousel() {
   const [banners, setBanners] = useState<Banner[]>(BANNERS);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -52,6 +68,17 @@ export function BannerCarousel() {
     setExpanded(false);
   }, [currentIndex]);
 
+  // Autoplay functionality
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const timer = setInterval(() => {
+      setDirection(1);
+      setCurrentIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+    }, 4500); // Autoplay every 4.5 seconds
+
+    return () => clearInterval(timer);
+  }, [currentIndex, banners.length]);
+
   if (banners.length === 0) {
     return null;
   }
@@ -60,10 +87,12 @@ export function BannerCarousel() {
   const hasDetails = Boolean(currentBanner.details || currentBanner.description);
 
   const goToPrevious = () => {
+    setDirection(-1);
     setCurrentIndex((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
   };
 
   const goToNext = () => {
+    setDirection(1);
     setCurrentIndex((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
   };
 
@@ -77,32 +106,41 @@ export function BannerCarousel() {
   };
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden mb-8 shadow-md border" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
-      <div className="relative w-full overflow-hidden transition-all duration-500 ease-in-out">
-        <AnimatePresence mode="wait">
+    <div
+      className="relative w-full rounded-2xl overflow-hidden mb-8 shadow-md border select-none group"
+      style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
+    >
+      {/* Aspect-ratio container for professional landscape dimensions */}
+      <div className="relative w-full aspect-[16/7] md:aspect-[21/9] overflow-hidden">
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.4, ease: 'easeInOut' }}
-            className="w-full h-auto"
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: "spring", stiffness: 280, damping: 28 },
+              opacity: { duration: 0.25 }
+            }}
+            className="absolute inset-0 w-full h-full"
           >
             <button
               type="button"
               onClick={handleBannerTap}
-              className={`relative block w-full h-auto text-left ${currentBanner.link ? 'cursor-pointer' : 'cursor-default'}`}
+              className={`relative block w-full h-full text-left ${currentBanner.link ? 'cursor-pointer' : 'cursor-default'}`}
               aria-label={currentBanner.link ? `Open ${currentBanner.title}` : currentBanner.title}
             >
               <img
                 src={currentBanner.imageURL || (currentBanner as any).bannerImageUrl}
                 alt={currentBanner.title}
-                className="w-full h-auto object-cover rounded-2xl block"
+                className="w-full h-full object-cover rounded-2xl block select-none pointer-events-none"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent flex items-end p-6 rounded-2xl">
                 <div className="pr-8">
-                  <h3 className="text-white font-heading font-bold text-xl md:text-2xl drop-shadow-md leading-tight">{currentBanner.title}</h3>
-                  <p className="text-white/90 text-xs md:text-sm mt-1 font-medium tracking-wide drop-shadow-sm uppercase">{currentBanner.category}</p>
+                  <h3 className="text-white font-heading font-bold text-lg md:text-2xl drop-shadow-md leading-tight">{currentBanner.title}</h3>
+                  <p className="text-white/95 text-[10px] md:text-xs mt-1 font-semibold tracking-wide drop-shadow-sm uppercase">{currentBanner.category}</p>
                 </div>
               </div>
             </button>
@@ -114,13 +152,13 @@ export function BannerCarousel() {
           <>
             <button
               onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors backdrop-blur-sm"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100 duration-200"
             >
               <ChevronLeft className="w-5 h-5 text-white" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); goToNext(); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors backdrop-blur-sm"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100 duration-200"
             >
               <ChevronRight className="w-5 h-5 text-white" />
             </button>
@@ -130,7 +168,7 @@ export function BannerCarousel() {
               {banners.map((_, index) => (
                 <button
                   key={index}
-                  onClick={(e) => { e.stopPropagation(); setCurrentIndex(index); }}
+                  onClick={(e) => { e.stopPropagation(); setDirection(index > currentIndex ? 1 : -1); setCurrentIndex(index); }}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     index === currentIndex ? 'bg-white w-6' : 'bg-white/40 w-1.5'
                   }`}
@@ -144,7 +182,7 @@ export function BannerCarousel() {
         {hasDetails && (
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded((prev) => !prev); }}
-            className="absolute bottom-3 right-3 z-10 p-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-colors backdrop-blur-sm"
+            className="absolute bottom-3 right-3 z-10 p-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm"
             aria-label={expanded ? 'Hide details' : 'Show details'}
           >
             <motion.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex">

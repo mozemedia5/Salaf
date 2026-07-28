@@ -20,8 +20,6 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useUrlRouter } from '@/hooks/useUrlRouter';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 function App() {
   const currentView = useNavigationStore((s) => s.currentView);
@@ -30,23 +28,11 @@ function App() {
   const user = useAuthStore((s) => s.user);
   const initAuth = useAuthStore((s) => s.initAuth);
 
-  // Hash-based URL routing — keeps browser URL in sync with navigation state
+  // Initialize URL hash router (syncs nav store ↔ browser URL)
   useUrlRouter();
 
-  const prevQuestionsRef = useRef<Record<string, string>>({});
-  const isFirstLoadQuestionsRef = useRef(true);
-
-  const prevBannersRef = useRef<Record<string, boolean>>({});
-  const isFirstLoadBannersRef = useRef(true);
-
-  const prevNotifsRef = useRef<Record<string, boolean>>({});
-  const isFirstLoadNotifsRef = useRef(true);
-
-  // Initialize the global auth listener once at the app root.
-  // This resolves the race condition where useAdminAuth hooks in child
-  // components each spin up their own onAuthStateChanged listener and
-  // the admin role is not ready in time.
   useEffect(() => {
+    // Initialize the global auth listener once at the app root.
     initAuth();
   }, [initAuth]);
 

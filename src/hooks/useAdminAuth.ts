@@ -76,6 +76,7 @@ export function useAdminAuth() {
 
     const defaultPermissions: AdminUser['permissions'] = {
       canManageVideos: true,
+      canManageAudio: true,
       canManageArticles: true,
       canManageGallery: true,
       canManageDonations: true,

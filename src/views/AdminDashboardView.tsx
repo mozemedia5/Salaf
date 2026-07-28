@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Play, FileText, Image as ImageIcon, HandHeart,
-  LayoutPanelTop, MessageCircle, Users, Bell, ChevronLeft, Loader2, ShieldAlert, Menu, X, Headphones
+  LayoutPanelTop, MessageCircle, Users, Bell, ChevronLeft, Loader2, ShieldAlert, Menu, X, Headphones,
 } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAdminStore } from '@/stores/adminStore';
@@ -19,6 +19,7 @@ import { BannerManagement } from '@/components/admin/BannerManagement';
 import { QuestionManagement } from '@/components/admin/QuestionManagement';
 import { AdminManagement } from '@/components/admin/AdminManagement';
 import { NotificationManagement } from '@/components/admin/NotificationManagement';
+import { AudioManagement } from '@/components/admin/AudioManagement';
 
 interface SectionDef {
   id: AdminSection;
@@ -31,7 +32,7 @@ interface SectionDef {
 const SECTIONS: SectionDef[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'videos', label: 'Videos', icon: Play, permission: 'canManageVideos' },
-  { id: 'audio', label: 'Audio', icon: Headphones, permission: 'canManageVideos' },
+  { id: 'audio', label: 'Audio', icon: Headphones, permission: 'canManageAudio' },
   { id: 'articles', label: 'Articles', icon: FileText, permission: 'canManageArticles' },
   { id: 'gallery', label: 'Gallery', icon: ImageIcon, permission: 'canManageGallery' },
   { id: 'donations', label: 'Donations', icon: HandHeart, permission: 'canManageDonations' },

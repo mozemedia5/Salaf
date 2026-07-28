@@ -5,6 +5,7 @@ import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';
 import { CategoryChip } from '@/components/ui-custom/CategoryChip';
 import { GlassCard } from '@/components/ui-custom/GlassCard';
+import { AyahOfDay } from '@/components/ui-custom/AyahOfDay';
 import { VideoCard } from '@/components/cards/VideoCard';
 import { AudioCard } from '@/components/cards/AudioCard';
 import { CampaignCard } from '@/components/cards/CampaignCard';
@@ -12,11 +13,17 @@ import { BannerCarousel } from '@/components/banners/BannerCarousel';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useVideoStore } from '@/stores/videoStore';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
-import { useAuthStore } from '@/stores/authStore';
-import { collection, query, onSnapshot, orderBy, where, limit } from 'firebase/firestore';
+import { collection, query, onSnapshot, limit, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CATEGORIES, DAILY_REMINDER } from '@/lib/data';
-import type { Video, AudioTrack, Campaign, GalleryImage } from '@/types';
+import { CATEGORIES, CAMPAIGNS, GALLERY_IMAGES, DAILY_REMINDER } from '@/lib/data';
+import type { Video, Banner, Article, AudioTrack } from '@/types';
+
+const QUICK_ACTIONS = [
+  { icon: BookOpen, label: 'Read Quran' },
+  { icon: Hand, label: 'Daily Dua' },
+  { icon: Clock, label: 'Prayer Times' },
+  { icon: Compass, label: 'Qibla' },
+];
 
 export function HomeView() {
   const { setActiveTab, navigateTo, openAuthModal } = useNavigationStore();
@@ -26,38 +33,24 @@ export function HomeView() {
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [videos, setVideos] = useState<Video[]>([]);
-  const [recentAudio, setRecentAudio] = useState<AudioTrack[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
+  const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
 
   // Fetch campaigns from Firestore
   useEffect(() => {
-    const q = query(collection(db, 'campaigns'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Campaign[];
-      setCampaigns(list);
-    }, (error) => {
-      console.error("Failed to load campaigns:", error);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Fetch videos from Firestore
-  useEffect(() => {
-    const vq = query(
-      collection(db, 'videos'),
-      where('isActive', '!=', false),
-      orderBy('isActive'),
-      orderBy('createdAt', 'desc')
-    );
+    const vq = query(collection(db, 'videos'), orderBy('createdAt', 'desc'), limit(8));
     const unsubVideos = onSnapshot(vq, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Video));
-      setVideos(data);
-    }, (error) => {
-      console.error("Failed to load videos:", error);
+      setVideos(data.filter(v => v.isActive !== false));
+    }, () => {
+      // Fallback without ordering
+      const vq2 = query(collection(db, 'videos'), limit(8));
+      onSnapshot(vq2, (snap) => {
+        setVideos(snap.docs.map(d => ({ id: d.id, ...d.data() } as Video)).filter(v => v.isActive !== false));
+      });
     });
 
     return () => unsubVideos();
@@ -82,20 +75,32 @@ export function HomeView() {
       console.error("Failed to load audio tracks:", err);
     });
 
-    return () => unsubAudio();
-  }, []);
-
-  // Fetch gallery images from Firestore (limit to 4 for the highlights section)
-  useEffect(() => {
-    const q = query(collection(db, 'gallery'), limit(4));
-    const unsubGallery = onSnapshot(q, (snap) => {
-      const images = snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryImage));
-      setGalleryImages(images);
-    }, (err) => {
-      console.error("Failed to load gallery highlights:", err);
+    const aq = query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(4));
+    const unsubArticles = onSnapshot(aq, (snap) => {
+      setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() } as Article)).filter(a => a.isActive !== false));
+    }, () => {
+      const aq2 = query(collection(db, 'articles'), limit(4));
+      onSnapshot(aq2, (snap) => {
+        setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() } as Article)).filter(a => a.isActive !== false));
+      });
     });
 
-    return () => unsubGallery();
+    const audioQ = query(collection(db, 'audio'), orderBy('createdAt', 'desc'), limit(5));
+    const unsubAudio = onSnapshot(audioQ, (snap) => {
+      setAudioTracks(snap.docs.map(d => ({ id: d.id, ...d.data() } as AudioTrack)));
+    }, () => {
+      const audioQ2 = query(collection(db, 'audio'), limit(5));
+      onSnapshot(audioQ2, (snap) => {
+        setAudioTracks(snap.docs.map(d => ({ id: d.id, ...d.data() } as AudioTrack)));
+      });
+    });
+
+    return () => {
+      unsubVideos();
+      unsubBanners();
+      unsubArticles();
+      unsubAudio();
+    };
   }, []);
 
   const filteredVideos = activeCategory === 'All' ? videos : videos.filter(v => v.category === activeCategory);
@@ -365,8 +370,87 @@ export function HomeView() {
         </div>
       )}
 
-      {/* Recent Audio Tracks */}
-      {recentAudio.length > 0 && (
+      {/* Recent Audio */}
+      {audioTracks.length > 0 && (
+        <div className="mt-8">
+          <SectionHeader title="Recent Audio" action="View All" onAction={() => setActiveTab('audio')} />
+          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
+            {audioTracks.map((track) => (
+              <div key={track.id} className="w-[180px] flex-shrink-0 snap-start">
+                <AudioCard track={track} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fundraising */}
+      <div className="mt-8 px-4">
+        <SectionHeader title="Support Our Cause" />
+        <CampaignCard campaign={CAMPAIGNS[0]} featured />
+      </div>
+
+      {/* Featured Articles */}
+      {articles.length > 0 && (
+        <div className="mt-8">
+          <SectionHeader title="Featured Articles" action="View All" onAction={() => navigateTo('articles')} />
+          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
+            {articles.map((article) => (
+              <div key={article.id} className="w-[300px] flex-shrink-0 snap-start">
+                <ArticleCard article={article} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Gallery Preview */}
+      <div className="mt-8">
+        <SectionHeader title="Inspirational Gallery" action="Explore" onAction={() => navigateTo('gallery')} />
+        <div className="px-4 grid grid-cols-2 gap-2">
+          {GALLERY_IMAGES.slice(0, 3).map((img, i) => (
+            <ScrollReveal key={img.id} delay={i * 0.1}>
+              <div className="aspect-square rounded-xl overflow-hidden cursor-pointer group" onClick={() => navigateTo('gallery')}>
+                <img src={img.imageURL} alt={img.caption} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              </div>
+            </ScrollReveal>
+          ))}
+          <ScrollReveal delay={0.3}>
+            <div className="aspect-square rounded-xl overflow-hidden cursor-pointer relative group" onClick={() => navigateTo('gallery')}>
+              <img src={GALLERY_IMAGES[3].imageURL} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <span className="text-white font-semibold text-lg">+{GALLERY_IMAGES.length - 3} more</span>
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mt-8 px-4">
+        <div className="grid grid-cols-4 gap-3">
+          {QUICK_ACTIONS.map((action, i) => (
+            <ScrollReveal key={action.label} delay={i * 0.1}>
+              <button className="flex flex-col items-center gap-2 py-4 rounded-2xl transition-all active:scale-95 hover:bg-emerald-50 dark:hover:bg-emerald-900/10">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
+                  <action.icon className="w-6 h-6 text-emerald-500" />
+                </div>
+                <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{action.label}</span>
+              </button>
+            </ScrollReveal>
+          ))}
+        </div>
+      </div>
+
+      {/* Ayah of the Day — dynamic, fetched from alquran.cloud API */}
+      <div className="mt-8 px-4">
+        <ScrollReveal>
+          <AyahOfDay />
+        </ScrollReveal>
+      </div>
+
+      {/* Admin Banners Section */}
+      {banners.length > 0 && (
         <div className="mt-8">
           <SectionHeader title="Recent Audio" action="View All" onAction={() => setActiveTab('audio')} />
           <div className="px-4 grid grid-cols-2 gap-3">

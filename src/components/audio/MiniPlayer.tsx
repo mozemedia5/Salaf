@@ -1,6 +1,6 @@
-import { Play, Pause, SkipForward, X } from "lucide-react";
-import { useAudioStore } from "@/stores/audioStore";
-import { cn } from "@/lib/utils";
+import { Play, Pause, SkipForward, X, Music } from 'lucide-react';
+import { useAudioStore } from '@/stores/audioStore';
+import { cn } from '@/lib/utils';
 
 export function MiniPlayer() {
   const { currentTrack, isPlaying, togglePlay, openFullPlayer, closeMiniPlayer, progress, currentTime } = useAudioStore();
@@ -15,13 +15,28 @@ export function MiniPlayer() {
       style={{ bottom: "64px", borderColor: "var(--border-color)" }}
     >
       <div className="w-full max-w-2xl relative h-full flex items-center">
+        {/* Progress bar — driven by real HTMLAudioElement events via audioStore */}
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gray-100 dark:bg-gray-800">
           <div className="h-full gradient-emerald transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
         <div className="flex items-center h-full px-4 gap-3 w-full">
           <div onClick={openFullPlayer} className="cursor-pointer flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0">
-              <img src={currentTrack.thumbnailURL} alt={currentTrack.title} className="w-full h-full object-cover" />
+            {/* Thumbnail with Music icon fallback */}
+            <div className="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+              {currentTrack.thumbnailURL ? (
+                <img
+                  src={currentTrack.thumbnailURL}
+                  alt={currentTrack.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                    const parent = (e.currentTarget as HTMLImageElement).parentElement;
+                    if (parent) parent.classList.add('show-icon');
+                  }}
+                />
+              ) : (
+                <Music className="w-5 h-5 text-emerald-500" />
+              )}
             </div>
             <div className="min-w-0">
               <p className={cn("text-sm font-medium truncate", isPlaying && "text-emerald-500")} style={{ color: isPlaying ? undefined : "var(--text-primary)" }}>

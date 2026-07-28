@@ -76,8 +76,44 @@ export const DAILY_VERSE = {
 };
 
 export const BANNERS: Banner[] = [
-  { id: '1', imageURL: 'https://images.unsplash.com/photo-1564121211835-e88c852648ab?w=400&h=225&fit=crop', category: 'Ramadan', title: 'Ramadan Kareem' },
-  { id: '2', imageURL: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=400&h=225&fit=crop', category: 'Events', title: 'Islamic Conference 2026' },
+  { id: '1', imageURL: 'https://images.unsplash.com/photo-1564121211835-e88c852648ab?w=800&h=350&fit=crop', category: 'Ramadan', title: 'Ramadan Kareem' },
+  { id: '2', imageURL: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=800&h=350&fit=crop', category: 'Events', title: 'Islamic Conference 2026' },
+];
+
+export const VIDEO_PRESET_THUMBNAILS = [
+  { id: 'v1', url: 'https://images.unsplash.com/photo-1542817137-e8029b49a3d0?w=600&h=400&fit=crop', name: 'Islamic Geometric Pattern' },
+  { id: 'v2', url: 'https://images.unsplash.com/photo-1564121211835-e88c852648ab?w=600&h=400&fit=crop', name: 'Grand Mosque Arches' },
+  { id: 'v3', url: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=600&h=400&fit=crop', name: 'Arabic Calligraphy' },
+  { id: 'v4', url: 'https://images.unsplash.com/photo-1542372147193-a7aca54189cd?w=600&h=400&fit=crop', name: 'Mosque Sunset Silhouette' },
+  { id: 'v5', url: 'https://images.unsplash.com/photo-1580537659465-0e0b1c098c6f?w=600&h=400&fit=crop', name: 'Open Holy Quran Pages' },
+  { id: 'v6', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop', name: 'Calming Blue Sea' },
+  { id: 'v7', url: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=600&h=400&fit=crop', name: 'Quiet Forest Paths' },
+  { id: 'v8', url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600&h=400&fit=crop', name: 'Lush Green Mountain Fog' },
+  { id: 'v9', url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600&h=400&fit=crop', name: 'Stunning Canyon Vista' },
+  { id: 'v10', url: 'https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=600&h=400&fit=crop', name: 'Vibrant Autumn Forest' },
+  { id: 'v11', url: 'https://images.unsplash.com/photo-1433832597046-4f10e10ac764?w=600&h=400&fit=crop', name: 'Beautiful Hot Air Balloons' },
+  { id: 'v12', url: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&h=400&fit=crop', name: 'Sun Rays Through Tree Branches' },
+  { id: 'v13', url: 'https://images.unsplash.com/photo-1472214222541-d510753a4707?w=600&h=400&fit=crop', name: 'Peaceful Rural Meadows' },
+  { id: 'v14', url: 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=600&h=400&fit=crop', name: 'Sunset Coastline Horizon' },
+  { id: 'v15', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=400&fit=crop', name: 'Cosmic Nebula Space Art' }
+];
+
+export const AUDIO_PRESET_THUMBNAILS = [
+  { id: 'a1', url: 'https://images.unsplash.com/photo-1516280440614-37939bbacd6a?w=400&h=400&fit=crop', name: 'Microphone with Warm Bokeh' },
+  { id: 'a2', url: 'https://images.unsplash.com/photo-1484755560693-a4074577af3a?w=400&h=400&fit=crop', name: 'Retro Record Player' },
+  { id: 'a3', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop', name: 'Professional Soundboard Sliders' },
+  { id: 'a4', url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop', name: 'Vibrant Sound Waves Graphic' },
+  { id: 'a5', url: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=400&h=400&fit=crop', name: 'Acoustic Guitar Close-Up' },
+  { id: 'a6', url: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&h=400&fit=crop', name: 'Huge Stadium Event Spotlight' },
+  { id: 'a7', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop', name: 'Atmospheric Stage Lighting' },
+  { id: 'a8', url: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400&h=400&fit=crop', name: 'Abstract Colorful Energy Wave' },
+  { id: 'a9', url: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=400&h=400&fit=crop', name: 'Textured Flowing Paint Canvas' },
+  { id: 'a10', url: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=400&h=400&fit=crop', name: 'Retro Vintage Cassette Tape' },
+  { id: 'a11', url: 'https://images.unsplash.com/photo-1487180144351-b8472da7a4c3?w=400&h=400&fit=crop', name: 'Stylized Music Headset' },
+  { id: 'a12', url: 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=400&h=400&fit=crop', name: 'Grand Piano Keys' },
+  { id: 'a13', url: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&h=400&fit=crop', name: 'Abstract Glowing Concentric Rings' },
+  { id: 'a14', url: 'https://images.unsplash.com/photo-1453733190148-c44698c265a8?w=400&h=400&fit=crop', name: 'Classic Pocket Watch Details' },
+  { id: 'a15', url: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=400&h=400&fit=crop', name: 'Moody Studio Microphones' }
 ];
 
 // Dynamic Ayah of the Day — automatically rotates daily without admin input

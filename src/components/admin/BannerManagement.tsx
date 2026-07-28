@@ -196,6 +196,14 @@ export function BannerManagement() {
                   onUploaded={(url) => setFormData({ ...formData, imageURL: url })}
                   onUploadStateChange={setUploading}
                 />
+                <div className="mt-1.5 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
+                  <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
+                    <strong>Recommended Image Specifications:</strong>
+                    <br />• Aspect Ratio: <strong>16:7 / 21:9</strong> (Landscape format)
+                    <br />• Optimal Resolution: <strong>1200 x 514px</strong> or <strong>1920 x 820px</strong>
+                    <br />• Text & main elements should be vertically and horizontally centered for best visibility across all devices.
+                  </p>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

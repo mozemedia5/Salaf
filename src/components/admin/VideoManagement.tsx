@@ -67,7 +67,7 @@ export function VideoManagement() {
     setSaving(true);
     try {
       const videoId = extractVideoId(formData.videoURL, formData.videoType);
-      const data = {
+      const data: any = {
         ...formData,
         thumbnailUrl: formData.thumbnailURL,
         youtubeId: formData.videoType === 'youtube' ? videoId : '',
@@ -75,8 +75,10 @@ export function VideoManagement() {
         viewCount: editingVideo?.viewCount || 0,
         likes: editingVideo?.likes || 0,
         updatedAt: serverTimestamp(),
-        createdAt: editingVideo ? undefined : serverTimestamp(),
       };
+      if (!editingVideo) {
+        data.createdAt = serverTimestamp();
+      }
 
       if (editingVideo) {
         await updateDoc(doc(db, 'videos', editingVideo.id), data);

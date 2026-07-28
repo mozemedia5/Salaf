@@ -40,12 +40,14 @@ export function ArticleManagement() {
     if (!formData.title || !formData.content) return;
     setSaving(true);
     try {
-      const data = {
+      const data: any = {
         ...formData,
         featuredImageUrl: formData.featuredImageURL,
         updatedAt: serverTimestamp(),
-        createdAt: editingArticle ? undefined : serverTimestamp()
       };
+      if (!editingArticle) {
+        data.createdAt = serverTimestamp();
+      }
       if (editingArticle) {
         await updateDoc(doc(db, 'articles', editingArticle.id), data);
       } else {

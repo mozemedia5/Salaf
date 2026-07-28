@@ -15,7 +15,7 @@ import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useAuthStore } from '@/stores/authStore';
 import { collection, query, onSnapshot, orderBy, where, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CATEGORIES, DAILY_REMINDER } from '@/lib/data';
+import { CATEGORIES, getDailyAyah } from '@/lib/data';
 import type { Video, AudioTrack, Campaign, GalleryImage } from '@/types';
 
 export function HomeView() {
@@ -29,6 +29,8 @@ export function HomeView() {
   const [recentAudio, setRecentAudio] = useState<AudioTrack[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+
+  const dailyAyah = getDailyAyah();
 
   // Fetch campaigns from Firestore
   useEffect(() => {
@@ -110,7 +112,7 @@ export function HomeView() {
 
   return (
     <div className="pb-4">
-      {/* 1. HERO SECTION (Dynamic welcome / customized message based on user session) */}
+      {/* 1. HERO SECTION */}
       <ScrollReveal className="relative px-4 pt-6 pb-6 overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url(/images/divider-pattern.jpg)', backgroundSize: '300px' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/50 to-transparent dark:from-emerald-900/10 pointer-events-none" />
@@ -139,21 +141,28 @@ export function HomeView() {
           )}
         </div>
 
-        {/* Daily Reminder Quote */}
+        {/* Dynamic Ayah of the Day — auto-rotates daily */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-5">
           <GlassCard className="relative overflow-hidden">
             <div className="h-1 w-full gradient-emerald rounded-t-2xl absolute top-0 left-0" />
-            <p className="text-base font-arabic italic leading-relaxed text-center" style={{ color: 'var(--text-primary)' }}>
-              "{DAILY_REMINDER.quote}"
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Ayah of the Day</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            <p className="text-lg font-arabic leading-relaxed text-center" style={{ color: 'var(--text-primary)' }}>
+              {dailyAyah.arabic}
+            </p>
+            <p className="text-xs mt-2 italic text-center" style={{ color: 'var(--text-secondary)' }}>
+              "{dailyAyah.translation}"
             </p>
             <p className="text-[11px] mt-2 text-right font-medium" style={{ color: 'var(--text-muted)' }}>
-              — {DAILY_REMINDER.source}
+              — {dailyAyah.reference}
             </p>
           </GlassCard>
         </motion.div>
       </ScrollReveal>
 
-      {/* 2. DYNAMIC LOGIN & GET STARTED OPTIONS (Disappears smoothly with AnimatePresence when logged in) */}
+      {/* 2. LOGIN CTA for guests */}
       <AnimatePresence>
         {!user && (
           <motion.div
@@ -188,7 +197,6 @@ export function HomeView() {
                 </button>
               </div>
 
-              {/* Unique key feature points */}
               <div className="grid grid-cols-3 gap-2 mt-6 w-full pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
                 <div className="flex flex-col items-center">
                   <BookOpen className="w-4 h-4 text-emerald-500 mb-1" />
@@ -208,12 +216,33 @@ export function HomeView() {
         )}
       </AnimatePresence>
 
-      {/* 3. DYNAMIC DASHBOARD BANNERS CAROUSEL */}
+      {/* 3. BANNER CAROUSEL */}
       <div className="px-4 mt-2">
         <BannerCarousel />
       </div>
 
-      {/* 4. MAIN INTERACTIVE VIEWS (BROWSE TOPICS) */}
+      {/* 4. ARTICLES SECTION — Easy access for users to read admin-written articles */}
+      <div className="mt-6 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          onClick={() => navigateTo('articles')}
+          className="group relative overflow-hidden rounded-2xl cursor-pointer border p-4 flex items-center gap-4 transition-all hover:shadow-md"
+          style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.04))', borderColor: 'rgba(16,185,129,0.2)' }}
+        >
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-6 h-6 text-emerald-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Read Islamic Articles</h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Scholarly articles written by our administrators</p>
+          </div>
+          <ArrowRight className="w-5 h-5 text-emerald-500 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        </motion.div>
+      </div>
+
+      {/* 5. BROWSE BY TOPIC */}
       <div className="mt-6">
         <div className="px-4 mb-3 flex items-center justify-between">
           <h2 className="font-heading font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Browse by Topic</h2>
@@ -302,7 +331,7 @@ export function HomeView() {
         </div>
       )}
 
-      {/* Gallery Highlights Grid - Modern custom grid aligned to UI/UX updates */}
+      {/* Gallery Highlights Grid */}
       {galleryImages.length > 0 && (
         <div className="mt-8 px-4">
           <SectionHeader title="Gallery Highlights" action="View Gallery" onAction={() => navigateTo('gallery')} />

@@ -79,3 +79,50 @@ export const BANNERS: Banner[] = [
   { id: '1', imageURL: 'https://images.unsplash.com/photo-1564121211835-e88c852648ab?w=400&h=225&fit=crop', category: 'Ramadan', title: 'Ramadan Kareem' },
   { id: '2', imageURL: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=400&h=225&fit=crop', category: 'Events', title: 'Islamic Conference 2026' },
 ];
+
+// Dynamic Ayah of the Day — automatically rotates daily without admin input
+export const AYAHS_OF_THE_DAY = [
+  { arabic: 'إِنَّ مَعَ الْعُسْرِ يُسْرًا', translation: 'Indeed, with hardship [will be] ease.', reference: 'Quran 94:6' },
+  { arabic: 'وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا', translation: 'And whoever fears Allah — He will make for him a way out.', reference: 'Quran 65:2' },
+  { arabic: 'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا', translation: 'For indeed, with hardship will be ease.', reference: 'Quran 94:5' },
+  { arabic: 'وَعَسَىٰ أَن تَكْرَهُوا شَيْئًا وَهُوَ خَيْرٌ لَّكُمْ', translation: 'But perhaps you hate a thing and it is good for you.', reference: 'Quran 2:216' },
+  { arabic: 'إِنَّ اللَّهَ مَعَ الصَّابِرِينَ', translation: 'Indeed, Allah is with the patient.', reference: 'Quran 2:153' },
+  { arabic: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً', translation: 'Our Lord, give us in this world that which is good and in the Hereafter that which is good.', reference: 'Quran 2:201' },
+  { arabic: 'وَلَا تَيْأَسُوا مِن رَّوْحِ اللَّهِ', translation: 'And despair not of relief from Allah.', reference: 'Quran 12:87' },
+  { arabic: 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ', translation: 'Sufficient for us is Allah, and [He is] the best Disposer of affairs.', reference: 'Quran 3:173' },
+  { arabic: 'وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ', translation: 'And my success is not but through Allah.', reference: 'Quran 11:88' },
+  { arabic: 'إِنَّ اللَّهَ لَا يُضِيعُ أَجْرَ الْمُحْسِنِينَ', translation: 'Indeed, Allah does not allow to be lost the reward of those who do good.', reference: 'Quran 9:120' },
+  { arabic: 'وَبَشِّرِ الصَّابِرِينَ', translation: 'And give good tidings to the patient.', reference: 'Quran 2:155' },
+  { arabic: 'إِنَّ اللَّهَ مَعَ الَّذِينَ اتَّقَوا', translation: 'Indeed, Allah is with those who fear Him.', reference: 'Quran 16:128' },
+  { arabic: 'وَاللَّهُ يُحِبُّ الصَّابِرِينَ', translation: 'And Allah loves the steadfast.', reference: 'Quran 3:146' },
+  { arabic: 'قُلْ إِنَّ صَلَاتِي وَنُسُكِي وَمَحْيَايَ وَمَمَاتِي لِلَّهِ', translation: 'Say: Indeed, my prayer, my rites of sacrifice, my living and my dying are for Allah.', reference: 'Quran 6:162' },
+  { arabic: 'يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ', translation: 'O you who have believed, seek help through patience and prayer.', reference: 'Quran 2:153' },
+  { arabic: 'وَإِذَا سَأَلَكَ عِبَادِي عَنِّي فَإِنِّي قَرِيبٌ', translation: 'And when My servants ask you concerning Me — indeed I am near.', reference: 'Quran 2:186' },
+  { arabic: 'لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا', translation: 'Allah does not burden a soul beyond that it can bear.', reference: 'Quran 2:286' },
+  { arabic: 'وَاللَّهُ خَيْرُ الْمَاكِرِينَ', translation: 'And Allah is the best of planners.', reference: 'Quran 3:54' },
+  { arabic: 'اللَّهُ وَلِيُّ الَّذِينَ آمَنُوا', translation: 'Allah is the ally of those who believe.', reference: 'Quran 2:257' },
+  { arabic: 'كُلُّ نَفْسٍ ذَائِقَةُ الْمَوْتِ', translation: 'Every soul will taste death. And We test you with evil and with good as trial.', reference: 'Quran 21:35' },
+  { arabic: 'إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ', translation: 'Indeed we belong to Allah, and indeed to Him we will return.', reference: 'Quran 2:156' },
+  { arabic: 'وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا', translation: 'And those who strive for Us — We will surely guide them to Our ways.', reference: 'Quran 29:69' },
+  { arabic: 'تَوَكَّلْ عَلَى اللَّهِ ۚ إِنَّ اللَّهَ يُحِبُّ الْمُتَوَكِّلِينَ', translation: 'And rely upon Allah; indeed, Allah loves those who rely [upon Him].', reference: 'Quran 3:159' },
+  { arabic: 'فَاذْكُرُونِي أَذْكُرْكُمْ', translation: 'So remember Me; I will remember you.', reference: 'Quran 2:152' },
+  { arabic: 'وَهُوَ مَعَكُمْ أَيْنَمَا كُنتُمْ', translation: 'And He is with you wherever you are.', reference: 'Quran 57:4' },
+  { arabic: 'قُل لَّن يُصِيبَنَا إِلَّا مَا كَتَبَ اللَّهُ لَنَا', translation: 'Say: Nothing will befall us except what Allah has decreed for us.', reference: 'Quran 9:51' },
+  { arabic: 'وَنَحْنُ أَقْرَبُ إِلَيْهِ مِنْ حَبْلِ الْوَرِيدِ', translation: 'And We are closer to him than his jugular vein.', reference: 'Quran 50:16' },
+  { arabic: 'ادْعُونِي أَسْتَجِبْ لَكُمْ', translation: 'Call upon Me; I will respond to you.', reference: 'Quran 40:60' },
+  { arabic: 'وَلَذِكْرُ اللَّهِ أَكْبَرُ', translation: 'And the remembrance of Allah is greater.', reference: 'Quran 29:45' },
+  { arabic: 'أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ', translation: 'Verily, in the remembrance of Allah do hearts find rest.', reference: 'Quran 13:28' },
+];
+
+/**
+ * Returns the Ayah of the Day based on the current date.
+ * Automatically rotates daily without any admin input.
+ */
+export function getDailyAyah() {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - startOfYear.getTime();
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const index = dayOfYear % AYAHS_OF_THE_DAY.length;
+  return AYAHS_OF_THE_DAY[index];
+}

@@ -93,7 +93,7 @@ export function AudioManagement() {
     if (!formData.title || !formData.audioURL) return;
     setSaving(true);
     try {
-      const data = {
+      const data: any = {
         ...formData,
         // Sync spellings for complete robustness
         audioURL: formData.audioURL,
@@ -101,10 +101,12 @@ export function AudioManagement() {
         playCount: editingTrack?.playCount || "0",
         scholarId: editingTrack?.scholarId || "s1", // Default scholar ID
         updatedAt: serverTimestamp(),
-        createdAt: editingTrack ? undefined : serverTimestamp(),
         uploadedBy: editingTrack?.uploadedBy || currentUser?.uid,
         createdBy: editingTrack?.createdBy || currentUser?.uid,
       };
+      if (!editingTrack) {
+        data.createdAt = serverTimestamp();
+      }
 
       if (editingTrack) {
         await updateDoc(doc(db, "audio", editingTrack.id), data);

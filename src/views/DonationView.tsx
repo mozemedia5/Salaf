@@ -1,25 +1,23 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, CheckCircle, HandHeart } from 'lucide-react';
+import { Heart, HandHeart, Phone, MessageCircle, Copy, CheckCircle, ExternalLink } from 'lucide-react';
 import { CampaignCard } from '@/components/cards/CampaignCard';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';
 import { useAuthStore } from '@/stores/authStore';
 import { useUserContentStore } from '@/stores/userContentStore';
-import { collection, query, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { formatCurrency } from '@/lib/utils';
 import type { Campaign } from '@/types';
 
-const PRESET_AMOUNTS = ['$10', '$25', '$50', '$100', '$250', '$500'];
-
 export function DonationView() {
   const user = useAuthStore((s) => s.user);
-  const { donations, totalDonated, fetchDonations, addDonation } = useUserContentStore();
+  const { donations, totalDonated, fetchDonations } = useUserContentStore();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [selectedAmount, setSelectedAmount] = useState<string | null>(null);
-  const [showThankYou, setShowThankYou] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copiedNumber, setCopiedNumber] = useState(false);
 
   // Fetch campaigns from Firestore
   useEffect(() => {
@@ -45,36 +43,19 @@ export function DonationView() {
     }
   }, [user, fetchDonations]);
 
-  const handleDonate = async () => {
-    if (!selectedAmount || !user || campaigns.length === 0) return;
-    const numericAmount = Number(selectedAmount.replace('$', ''));
+  const handleCopyNumber = (number: string) => {
+    navigator.clipboard.writeText(number).then(() => {
+      setCopiedNumber(true);
+      setTimeout(() => setCopiedNumber(false), 2000);
+    }).catch(() => {
+      alert(`Contact number: ${number}`);
+    });
+  };
 
-    // Default to the first campaign as the target or the featured campaign
-    const targetCampaign = campaigns.find(c => c.isFeatured) || campaigns[0];
-    if (!targetCampaign) return;
-
-    try {
-      // 1. Add donation transaction record to Firestore under user
-      await addDonation(user.uid, {
-        campaignId: targetCampaign.id,
-        campaignTitle: targetCampaign.title,
-        amount: numericAmount,
-        date: new Date().toISOString().split('T')[0],
-        status: 'completed'
-      });
-
-      // 2. Update campaign raised amount and donor count in Firestore
-      const campaignRef = doc(db, 'campaigns', targetCampaign.id);
-      await updateDoc(campaignRef, {
-        raisedAmount: (targetCampaign.raisedAmount || 0) + numericAmount,
-        donorCount: (targetCampaign.donorCount || 0) + 1
-      });
-
-      setShowThankYou(true);
-      setSelectedAmount(null);
-    } catch (error) {
-      console.error('Error logging donation:', error);
-    }
+  const handleWhatsApp = (number: string, campaignTitle: string) => {
+    const cleaned = number.replace(/\D/g, '');
+    const message = encodeURIComponent(`As-salamu Alaykum! I would like to donate to the "${campaignTitle}" campaign.`);
+    window.open(`https://wa.me/${cleaned}?text=${message}`, '_blank', 'noopener,noreferrer');
   };
 
   if (loading) {
@@ -99,85 +80,93 @@ export function DonationView() {
 
   const featuredCampaign = campaigns.find(c => c.isFeatured) || campaigns[0];
   const otherCampaigns = campaigns.filter(c => c.id !== featuredCampaign.id);
+  const displayCampaign = selectedCampaign || featuredCampaign;
 
-  if (showThankYou) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: [0, 1.2, 1] }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="w-20 h-20 rounded-full gradient-emerald flex items-center justify-center"
-        >
-          <CheckCircle className="w-10 h-10 text-white" />
-        </motion.div>
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="font-heading font-bold text-2xl mt-6"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          Jazakallahu Khairan
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-sm mt-2 max-w-xs"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          Your donation has been received. May Allah accept it and bless you abundantly.
-        </motion.p>
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          onClick={() => setShowThankYou(false)}
-          className="mt-8 py-3 px-8 rounded-xl gradient-emerald text-white font-semibold"
-        >
-          Done
-        </motion.button>
-      </div>
-    );
-  }
+  const hasContactInfo = displayCampaign.contactNumber || displayCampaign.whatsappNumber;
 
   return (
     <div className="pb-4">
       {/* Featured Campaign */}
       <div className="px-4 pt-2">
-        <CampaignCard campaign={featuredCampaign} featured />
+        <CampaignCard campaign={displayCampaign} featured />
       </div>
 
-      {/* Quick Donate */}
+      {/* Donate Section — shows contact info set by campaign coordinator */}
       <div className="mt-6 px-4">
-        <h3 className="font-heading font-semibold text-base mb-3" style={{ color: 'var(--text-primary)' }}>Quick Donate</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {PRESET_AMOUNTS.map((amount) => (
-            <button
-              key={amount}
-              onClick={() => setSelectedAmount(amount)}
-              className={`py-3 rounded-xl border text-sm font-semibold transition-all ${
-                selectedAmount === amount
-                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-glow'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700'
-              }`}
-              style={selectedAmount !== amount ? { color: 'var(--text-primary)', borderColor: 'var(--border-color)' } : {}}
-            >
-              {amount}
-            </button>
-          ))}
-        </div>
-        {selectedAmount && (
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={handleDonate}
-            className="w-full mt-3 py-3 rounded-xl gradient-gold text-white font-semibold flex items-center justify-center gap-2 shadow-glow-gold animate-pulse-glow"
-          >
-            <Heart className="w-5 h-5 fill-white" />
-            Donate {selectedAmount} to "{featuredCampaign.title}"
-          </motion.button>
+        <h3 className="font-heading font-semibold text-base mb-1" style={{ color: 'var(--text-primary)' }}>How to Donate</h3>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+          Contact the campaign coordinator directly to make your donation:
+        </p>
+
+        {hasContactInfo ? (
+          <div className="space-y-3">
+            {/* Contact / Account Number */}
+            {displayCampaign.contactNumber && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 rounded-2xl border flex items-center gap-3"
+                style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-5 h-5 text-emerald-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>Account / Contact Number</p>
+                  <p className="text-base font-bold mt-0.5" style={{ color: 'var(--text-primary)' }}>{displayCampaign.contactNumber}</p>
+                </div>
+                <button
+                  onClick={() => handleCopyNumber(displayCampaign.contactNumber!)}
+                  className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                >
+                  {copiedNumber ? (
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-emerald-500" />
+                  )}
+                </button>
+              </motion.div>
+            )}
+
+            {/* WhatsApp */}
+            {displayCampaign.whatsappNumber && (
+              <motion.button
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                onClick={() => handleWhatsApp(displayCampaign.whatsappNumber!, displayCampaign.title)}
+                className="w-full p-4 rounded-2xl border flex items-center gap-3 transition-all active:scale-[0.98] hover:shadow-md"
+                style={{ background: 'linear-gradient(135deg, #25D366/10, #128C7E/5)', borderColor: 'rgba(37,211,102,0.3)' }}
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#25D366' }}>
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-[11px] font-medium" style={{ color: 'var(--text-muted)' }}>Contact via WhatsApp</p>
+                  <p className="text-sm font-semibold mt-0.5" style={{ color: 'var(--text-primary)' }}>{displayCampaign.whatsappNumber}</p>
+                </div>
+                <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: '#25D366' }}>
+                  Contact <ExternalLink className="w-3 h-3" />
+                </div>
+              </motion.button>
+            )}
+
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-700/30">
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                💡 <strong>Instructions:</strong> Use the contact above to make your deposit. Please mention the campaign name when sending your donation. May Allah accept your contribution.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-5 rounded-2xl border text-center" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+            <Heart className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
+            <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Contact information coming soon</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+              The campaign coordinator will add payment details shortly.
+            </p>
+          </div>
         )}
       </div>
 
@@ -187,9 +176,22 @@ export function DonationView() {
           <SectionHeader title="Other Campaigns" />
           {otherCampaigns.map((campaign) => (
             <ScrollReveal key={campaign.id}>
-              <CampaignCard campaign={campaign} />
+              <div
+                onClick={() => setSelectedCampaign(campaign)}
+                className={`cursor-pointer rounded-2xl transition-all ${selectedCampaign?.id === campaign.id ? 'ring-2 ring-emerald-500' : ''}`}
+              >
+                <CampaignCard campaign={campaign} />
+              </div>
             </ScrollReveal>
           ))}
+          {selectedCampaign && (
+            <button
+              onClick={() => setSelectedCampaign(null)}
+              className="w-full py-2 text-xs text-emerald-500 font-medium"
+            >
+              ← Back to featured campaign
+            </button>
+          )}
         </div>
       )}
 

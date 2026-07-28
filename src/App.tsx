@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { AppShell } from '@/components/layout/AppShell';
 import { FullAudioPlayer } from '@/components/audio/FullAudioPlayer';
 import { HomeView } from '@/views/HomeView';
+import { LandingView } from '@/views/LandingView';
 import { VideosView } from '@/views/VideosView';
 import { AudioView } from '@/views/AudioView';
 import { ArticlesView } from '@/views/ArticlesView';
@@ -219,6 +220,11 @@ function App() {
   // User questions view is also full-screen
   if (currentView === 'user-questions') {
     return <UserQuestionsView />;
+  }
+
+  // Landing page — show for unauthenticated users on the home/landing view
+  if (!user && (currentView === 'home' || currentView === 'landing')) {
+    return <LandingView />;
   }
 
   const renderView = () => {

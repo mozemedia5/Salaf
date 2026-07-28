@@ -55,6 +55,7 @@ export function AdminManagement() {
         createdBy: currentUser?.uid,
         permissions: {
           canManageVideos: true,
+          canManageAudio: true,
           canManageArticles: true,
           canManageGallery: true,
           canManageDonations: true,

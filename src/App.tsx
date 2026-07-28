@@ -19,23 +19,22 @@ import { UserQuestionsView } from '@/views/UserQuestionsView';
 import { useThemeStore } from '@/stores/themeStore';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAuthStore } from '@/stores/authStore';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useUrlRouter } from '@/hooks/useUrlRouter';
 
 function App() {
   const currentView = useNavigationStore((s) => s.currentView);
   const setTheme = useThemeStore((s) => s.setTheme);
   const navigateTo = useNavigationStore((s) => s.navigateTo);
   const user = useAuthStore((s) => s.user);
+  const initAuth = useAuthStore((s) => s.initAuth);
 
-  const prevQuestionsRef = useRef<Record<string, string>>({});
-  const isFirstLoadQuestionsRef = useRef(true);
+  // Initialize URL hash router (syncs nav store ↔ browser URL)
+  useUrlRouter();
 
-  const prevBannersRef = useRef<Record<string, boolean>>({});
-  const isFirstLoadBannersRef = useRef(true);
-
-  const prevNotifsRef = useRef<Record<string, boolean>>({});
-  const isFirstLoadNotifsRef = useRef(true);
+  useEffect(() => {
+    // Initialize the global auth listener once at the app root.
+    initAuth();
+  }, [initAuth]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -89,7 +88,6 @@ function App() {
               });
               notification.onclick = () => {
                 window.focus();
-                // Navigate to My Questions
                 (window as any).navigateAppTo?.('user-questions');
               };
             }
@@ -117,7 +115,6 @@ function App() {
 
         if (!isFirstLoadBannersRef.current) {
           if (!prevBannersRef.current[doc.id]) {
-            // New banner added!
             const data = doc.data();
             if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
               const notification = new Notification('New Banner Announcement!', {
@@ -127,7 +124,6 @@ function App() {
               });
               notification.onclick = () => {
                 window.focus();
-                // Navigate to home tab
                 (window as any).navigateAppTo?.('home');
                 if (data.link) {
                   const href = /^https?:\/\//i.test(data.link) ? data.link : `https://${data.link}`;
@@ -160,7 +156,6 @@ function App() {
 
         if (!isFirstLoadNotifsRef.current) {
           if (!prevNotifsRef.current[doc.id]) {
-            // New notification document added!
             const data = doc.data();
             if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
               const notification = new Notification(data.title || 'New Announcement!', {
@@ -170,7 +165,6 @@ function App() {
               });
               notification.onclick = () => {
                 window.focus();
-                // Navigate to notifications view
                 (window as any).navigateAppTo?.('notifications');
                 if (data.link) {
                   const href = /^https?:\/\//i.test(data.link) ? data.link : `https://${data.link}`;

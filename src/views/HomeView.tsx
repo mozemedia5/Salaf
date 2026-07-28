@@ -5,104 +5,78 @@ import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';
 import { CategoryChip } from '@/components/ui-custom/CategoryChip';
 import { GlassCard } from '@/components/ui-custom/GlassCard';
+import { AyahOfDay } from '@/components/ui-custom/AyahOfDay';
 import { VideoCard } from '@/components/cards/VideoCard';
 import { AudioCard } from '@/components/cards/AudioCard';
 import { CampaignCard } from '@/components/cards/CampaignCard';
 import { BannerCarousel } from '@/components/banners/BannerCarousel';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useVideoStore } from '@/stores/videoStore';
-import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useAuthStore } from '@/stores/authStore';
-import { collection, query, onSnapshot, orderBy, where, limit } from 'firebase/firestore';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { collection, query, onSnapshot, limit, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CATEGORIES, DAILY_REMINDER } from '@/lib/data';
-import type { Video, AudioTrack, Campaign, GalleryImage } from '@/types';
+import { CATEGORIES, CAMPAIGNS, GALLERY_IMAGES, DAILY_REMINDER } from '@/lib/data';
+import type { Video, Article, AudioTrack } from '@/types';
 
 export function HomeView() {
   const { setActiveTab, navigateTo, openAuthModal } = useNavigationStore();
   const videoStore = useVideoStore();
   const { showInstall, handleInstallClick } = usePWAInstall();
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [videos, setVideos] = useState<Video[]>([]);
-  const [recentAudio, setRecentAudio] = useState<AudioTrack[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
 
-  // Fetch campaigns from Firestore
+  // Fetch videos
   useEffect(() => {
-    const q = query(collection(db, 'campaigns'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Campaign[];
-      setCampaigns(list);
-    }, (error) => {
-      console.error("Failed to load campaigns:", error);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Fetch videos from Firestore
-  useEffect(() => {
-    const vq = query(
-      collection(db, 'videos'),
-      where('isActive', '!=', false),
-      orderBy('isActive'),
-      orderBy('createdAt', 'desc')
-    );
-    const unsubVideos = onSnapshot(vq, (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Video));
-      setVideos(data);
-    }, (error) => {
-      console.error("Failed to load videos:", error);
-    });
-
-    return () => unsubVideos();
-  }, []);
-
-  // Fetch audio tracks from Firestore
-  useEffect(() => {
-    const q = query(collection(db, 'audio'));
-    const unsubAudio = onSnapshot(q, (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as AudioTrack));
-
-      // Sort in-memory by createdAt desc
-      data.sort((a, b) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA;
+    const vq = query(collection(db, 'videos'), orderBy('createdAt', 'desc'), limit(8));
+    const unsub = onSnapshot(vq, (snap) => {
+      setVideos(snap.docs.map(d => ({ id: d.id, ...d.data() } as Video)).filter(v => v.isActive !== false));
+    }, () => {
+      const vq2 = query(collection(db, 'videos'), limit(8));
+      onSnapshot(vq2, (snap) => {
+        setVideos(snap.docs.map(d => ({ id: d.id, ...d.data() } as Video)).filter(v => v.isActive !== false));
       });
-
-      const activeTracks = data.filter(a => a.isActive !== false);
-      setRecentAudio(activeTracks.slice(0, 2));
-    }, (err) => {
-      console.error("Failed to load audio tracks:", err);
     });
-
-    return () => unsubAudio();
+    return () => unsub();
   }, []);
 
-  // Fetch gallery images from Firestore (limit to 4 for the highlights section)
+  // Fetch articles
   useEffect(() => {
-    const q = query(collection(db, 'gallery'), limit(4));
-    const unsubGallery = onSnapshot(q, (snap) => {
-      const images = snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryImage));
-      setGalleryImages(images);
-    }, (err) => {
-      console.error("Failed to load gallery highlights:", err);
+    const aq = query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(4));
+    const unsub = onSnapshot(aq, (snap) => {
+      setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() } as Article)).filter(a => a.isActive !== false));
+    }, () => {
+      const aq2 = query(collection(db, 'articles'), limit(4));
+      onSnapshot(aq2, (snap) => {
+        setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() } as Article)).filter(a => a.isActive !== false));
+      });
     });
+    return () => unsub();
+  }, []);
 
-    return () => unsubGallery();
+  // Fetch audio tracks
+  useEffect(() => {
+    const audioQ = query(collection(db, 'audio'), orderBy('createdAt', 'desc'), limit(5));
+    const unsub = onSnapshot(audioQ, (snap) => {
+      setAudioTracks(snap.docs.map(d => ({ id: d.id, ...d.data() } as AudioTrack)));
+    }, () => {
+      const audioQ2 = query(collection(db, 'audio'), limit(5));
+      onSnapshot(audioQ2, (snap) => {
+        setAudioTracks(snap.docs.map(d => ({ id: d.id, ...d.data() } as AudioTrack)));
+      });
+    });
+    return () => unsub();
   }, []);
 
   const filteredVideos = activeCategory === 'All' ? videos : videos.filter(v => v.category === activeCategory);
   const displayVideos = filteredVideos.slice(0, 4);
   const featuredVideo = videos.find(v => (v as any).isFeatured) || videos[0];
   const trendingVideos = videos.slice(0, 5);
-  const featuredCampaign = campaigns.find(c => c.isFeatured) || campaigns[0];
+  const featuredCampaign = CAMPAIGNS.find(c => c.isFeatured) || CAMPAIGNS[0];
 
   const handleVideoClick = (video: Video) => {
     videoStore.setCurrentVideo(video);
@@ -110,7 +84,7 @@ export function HomeView() {
 
   return (
     <div className="pb-4">
-      {/* 1. HERO SECTION (Dynamic welcome / customized message based on user session) */}
+      {/* HERO SECTION */}
       <ScrollReveal className="relative px-4 pt-6 pb-6 overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url(/images/divider-pattern.jpg)', backgroundSize: '300px' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/50 to-transparent dark:from-emerald-900/10 pointer-events-none" />
@@ -153,7 +127,7 @@ export function HomeView() {
         </motion.div>
       </ScrollReveal>
 
-      {/* 2. DYNAMIC LOGIN & GET STARTED OPTIONS (Disappears smoothly with AnimatePresence when logged in) */}
+      {/* LOGIN & GET STARTED */}
       <AnimatePresence>
         {!user && (
           <motion.div
@@ -171,7 +145,6 @@ export function HomeView() {
               <p className="text-xs max-w-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
                 Create a free account or login to customize your library, ask questions directly to scholars, track notification alerts, and access premium courses.
               </p>
-
               <div className="flex gap-3 w-full max-w-xs mt-5">
                 <button
                   onClick={() => openAuthModal('login')}
@@ -187,8 +160,6 @@ export function HomeView() {
                   Create Account
                 </button>
               </div>
-
-              {/* Unique key feature points */}
               <div className="grid grid-cols-3 gap-2 mt-6 w-full pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
                 <div className="flex flex-col items-center">
                   <BookOpen className="w-4 h-4 text-emerald-500 mb-1" />
@@ -208,32 +179,36 @@ export function HomeView() {
         )}
       </AnimatePresence>
 
-      {/* 3. DYNAMIC DASHBOARD BANNERS CAROUSEL */}
+      {/* DYNAMIC BANNERS CAROUSEL */}
       <div className="px-4 mt-2">
         <BannerCarousel />
       </div>
 
-      {/* 4. MAIN INTERACTIVE VIEWS (BROWSE TOPICS) */}
+      {/* BROWSE BY TOPIC */}
       <div className="mt-6">
         <div className="px-4 mb-3 flex items-center justify-between">
           <h2 className="font-heading font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Browse by Topic</h2>
           {activeCategory !== 'All' && (
-            <button
-              onClick={() => setActiveCategory('All')}
-              className="text-xs font-semibold text-emerald-500 hover:underline"
-            >
+            <button onClick={() => setActiveCategory('All')} className="text-xs font-semibold text-emerald-500 hover:underline">
               Reset Filters
             </button>
           )}
         </div>
-        <div className="flex gap-2 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-2">
+        <div className="flex gap-2 px-4 overflow-x-auto scrollbar-hide pb-2">
           {CATEGORIES.map((cat) => (
             <CategoryChip key={cat} label={cat} isActive={activeCategory === cat} onClick={() => setActiveCategory(cat)} />
           ))}
         </div>
       </div>
 
-      {/* Featured Lecture Highlight */}
+      {/* AYAH OF THE DAY */}
+      <div className="mt-8 px-4">
+        <ScrollReveal>
+          <AyahOfDay />
+        </ScrollReveal>
+      </div>
+
+      {/* FEATURED LECTURE */}
       {featuredVideo && (
         <div className="mt-8 px-4">
           <SectionHeader title="Featured Lecture" action="View All" onAction={() => setActiveTab('videos')} />
@@ -246,11 +221,7 @@ export function HomeView() {
           >
             <div className="aspect-video w-full relative overflow-hidden bg-black">
               {featuredVideo.thumbnailURL ? (
-                <img
-                  src={featuredVideo.thumbnailURL}
-                  alt={featuredVideo.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+                <img src={featuredVideo.thumbnailURL} alt={featuredVideo.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <VideoIcon className="w-12 h-12 text-emerald-500 animate-pulse" />
@@ -261,21 +232,13 @@ export function HomeView() {
                   <Play className="w-8 h-8 text-white fill-white translate-x-0.5" />
                 </div>
               </div>
-              <span className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-0.5 rounded font-semibold">
-                {featuredVideo.duration || 'Video'}
-              </span>
-              <span className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">
-                Featured Highlight
-              </span>
+              <span className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-0.5 rounded font-semibold">{featuredVideo.duration || 'Video'}</span>
+              <span className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">Featured Highlight</span>
             </div>
             <div className="p-5">
               <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{featuredVideo.category}</span>
-              <h3 className="font-heading font-bold text-lg mt-1" style={{ color: 'var(--text-primary)' }}>
-                {featuredVideo.title}
-              </h3>
-              <p className="text-xs mt-2 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                {featuredVideo.description}
-              </p>
+              <h3 className="font-heading font-bold text-lg mt-1" style={{ color: 'var(--text-primary)' }}>{featuredVideo.title}</h3>
+              <p className="text-xs mt-2 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{featuredVideo.description}</p>
               <div className="flex items-center gap-3 mt-4 text-[11px]" style={{ color: 'var(--text-muted)' }}>
                 <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{featuredVideo.scholarName}</span>
                 <span>&middot;</span>
@@ -286,7 +249,7 @@ export function HomeView() {
         </div>
       )}
 
-      {/* Latest Lectures */}
+      {/* LATEST LECTURES */}
       {displayVideos.length > 0 && (
         <div className="mt-8">
           <SectionHeader title="Latest Lectures" action="View All" onAction={() => setActiveTab('videos')} />
@@ -302,60 +265,13 @@ export function HomeView() {
         </div>
       )}
 
-      {/* Gallery Highlights Grid - Modern custom grid aligned to UI/UX updates */}
-      {galleryImages.length > 0 && (
-        <div className="mt-8 px-4">
-          <SectionHeader title="Gallery Highlights" action="View Gallery" onAction={() => navigateTo('gallery')} />
-          <div className="grid grid-cols-2 gap-3">
-            {galleryImages.map((img, i) => (
-              <ScrollReveal key={img.id} delay={i * 0.04}>
-                <div
-                  onClick={() => navigateTo('gallery')}
-                  className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer border shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02]"
-                  style={{ borderColor: 'var(--border-color)', background: 'var(--bg-secondary)' }}
-                >
-                  <img
-                    src={img.imageURL}
-                    alt={img.caption}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute top-2 right-2 bg-emerald-600/90 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] text-white font-medium">
-                    {img.category || 'Highlights'}
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <div className="p-2.5 rounded-full bg-white/20 backdrop-blur-md border border-white/35">
-                      <ArrowUpRight className="w-5 h-5 text-white" />
-                    </div>
-                  </div>
-                  {img.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
-                      <p className="text-white text-xs font-semibold truncate leading-snug">{img.caption}</p>
-                    </div>
-                  )}
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-          <button
-            onClick={() => navigateTo('gallery')}
-            className="w-full mt-3 h-12 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 hover:border-emerald-500 hover:bg-emerald-500/5 group transition-all text-xs font-semibold"
-            style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}
-          >
-            <ImageIcon className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-            Browse Full Gallery
-            <ArrowRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-        </div>
-      )}
-
-      {/* Trending Reminders */}
+      {/* TRENDING NOW */}
       {trendingVideos.length > 0 && (
         <div className="mt-8">
           <SectionHeader title="Trending Now" action="View All" onAction={() => setActiveTab('videos')} icon={<span className="text-amber-500 text-lg">&#128293;</span>} />
-          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
+          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-1">
             {trendingVideos.map((video) => (
-              <div key={video.id} className="w-[260px] flex-shrink-0 snap-start">
+              <div key={video.id} className="w-[260px] flex-shrink-0">
                 <div onClick={() => handleVideoClick(video)}>
                   <VideoCard video={video} variant="trending" />
                 </div>
@@ -365,29 +281,94 @@ export function HomeView() {
         </div>
       )}
 
-      {/* Recent Audio Tracks */}
-      {recentAudio.length > 0 && (
+      {/* RECENT AUDIO */}
+      {audioTracks.length > 0 && (
         <div className="mt-8">
           <SectionHeader title="Recent Audio" action="View All" onAction={() => setActiveTab('audio')} />
-          <div className="px-4 grid grid-cols-2 gap-3">
-            {recentAudio.map((track, i) => (
-              <ScrollReveal key={track.id} delay={i * 0.05}>
+          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-1">
+            {audioTracks.map((track) => (
+              <div key={track.id} className="w-[180px] flex-shrink-0">
                 <AudioCard track={track} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* FEATURED ARTICLES */}
+      {articles.length > 0 && (
+        <div className="mt-8">
+          <SectionHeader title="Featured Articles" action="View All" onAction={() => navigateTo('articles')} />
+          <div className="px-4 grid grid-cols-1 gap-3">
+            {articles.slice(0, 3).map((article) => (
+              <ScrollReveal key={article.id}>
+                <GlassCard
+                  className="cursor-pointer"
+                  onClick={() => navigateTo('article-detail')}
+                >
+                  <div className="flex gap-3">
+                    {article.featuredImageURL && (
+                      <img src={article.featuredImageURL} alt={article.title} className="w-20 h-20 rounded-xl object-cover flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{article.category}</span>
+                      <h3 className="font-semibold text-sm mt-0.5 line-clamp-2" style={{ color: 'var(--text-primary)' }}>{article.title}</h3>
+                      <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{article.excerpt}</p>
+                    </div>
+                  </div>
+                </GlassCard>
               </ScrollReveal>
             ))}
           </div>
         </div>
       )}
 
-      {/* Fundraising & Campaigns */}
+      {/* GALLERY PREVIEW */}
+      <div className="mt-8 px-4">
+        <SectionHeader title="Inspirational Gallery" action="Explore" onAction={() => navigateTo('gallery')} />
+        <div className="grid grid-cols-2 gap-2">
+          {GALLERY_IMAGES.slice(0, 3).map((img, i) => (
+            <ScrollReveal key={img.id} delay={i * 0.1}>
+              <div className="aspect-square rounded-xl overflow-hidden cursor-pointer group" onClick={() => navigateTo('gallery')}>
+                <img src={img.imageURL} alt={img.caption} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              </div>
+            </ScrollReveal>
+          ))}
+          <ScrollReveal delay={0.3}>
+            <div
+              className="aspect-square rounded-xl overflow-hidden cursor-pointer relative group"
+              onClick={() => navigateTo('gallery')}
+            >
+              <img src={GALLERY_IMAGES[3]?.imageURL} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-1">
+                  <ArrowUpRight className="w-6 h-6 text-white" />
+                  <span className="text-white font-semibold text-sm">+{GALLERY_IMAGES.length - 3} more</span>
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+        <button
+          onClick={() => navigateTo('gallery')}
+          className="w-full mt-3 h-12 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 hover:border-emerald-500 hover:bg-emerald-500/5 group transition-all text-xs font-semibold"
+          style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}
+        >
+          <ImageIcon className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+          Browse Full Gallery
+          <ArrowRight className="w-4 h-4 text-emerald-500 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      </div>
+
+      {/* FUNDRAISING */}
       {featuredCampaign && (
         <div className="mt-8 px-4">
-          <SectionHeader title="Fundraising Highlight" action="Donate" onAction={() => setActiveTab('donate')} />
+          <SectionHeader title="Support Our Cause" action="Donate" onAction={() => setActiveTab('donate')} />
           <CampaignCard campaign={featuredCampaign} featured />
         </div>
       )}
 
-      {/* Footer */}
+      {/* FOOTER */}
       <div className="mt-10 pb-8 text-center">
         <div className="h-px mx-8 mb-6" style={{ background: 'var(--border-color)' }} />
         <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Salaf Platform</p>

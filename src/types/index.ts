@@ -69,6 +69,7 @@ export interface GalleryImage {
   imageURL: string;
   thumbnailURL: string;
   caption: string;
+  altText?: string;
   category: string;
   favoriteCount: number;
   uploadedBy?: string;
@@ -156,6 +157,7 @@ export interface AdminUser {
   lastLoginAt?: string;
   permissions: {
     canManageVideos: boolean;
+    canManageAudio: boolean;
     canManageArticles: boolean;
     canManageGallery: boolean;
     canManageDonations: boolean;

@@ -2,15 +2,15 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Play, FileText, Image as ImageIcon, HandHeart,
-  LayoutPanelTop, MessageCircle, Users, Bell, ChevronLeft, Loader2, ShieldAlert, Menu, X, Headphones
+  LayoutPanelTop, MessageCircle, Users, Bell, ChevronLeft, Loader2, ShieldAlert, Menu, X, Headphones,
 } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAdminStore } from '@/stores/adminStore';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useAuthStore } from '@/stores/authStore';
 import type { AdminSection, AdminUser } from '@/types';
 import { OverviewSection } from '@/components/admin/OverviewSection';
 import { VideoManagement } from '@/components/admin/VideoManagement';
-import { AudioManagement } from '@/components/admin/AudioManagement';
 import { ArticleManagement } from '@/components/admin/ArticleManagement';
 import { GalleryManagement } from '@/components/admin/GalleryManagement';
 import { DonationManagement } from '@/components/admin/DonationManagement';
@@ -18,6 +18,7 @@ import { BannerManagement } from '@/components/admin/BannerManagement';
 import { QuestionManagement } from '@/components/admin/QuestionManagement';
 import { AdminManagement } from '@/components/admin/AdminManagement';
 import { NotificationManagement } from '@/components/admin/NotificationManagement';
+import { AudioManagement } from '@/components/admin/AudioManagement';
 
 interface SectionDef {
   id: AdminSection;
@@ -30,7 +31,7 @@ interface SectionDef {
 const SECTIONS: SectionDef[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'videos', label: 'Videos', icon: Play, permission: 'canManageVideos' },
-  { id: 'audio', label: 'Audio', icon: Headphones, permission: 'canManageVideos' },
+  { id: 'audio', label: 'Audio', icon: Headphones, permission: 'canManageAudio' },
   { id: 'articles', label: 'Articles', icon: FileText, permission: 'canManageArticles' },
   { id: 'gallery', label: 'Gallery', icon: ImageIcon, permission: 'canManageGallery' },
   { id: 'donations', label: 'Donations', icon: HandHeart, permission: 'canManageDonations' },
@@ -41,9 +42,10 @@ const SECTIONS: SectionDef[] = [
 ];
 
 export function AdminDashboardView() {
-  const { goBack } = useNavigationStore();
+  const { goBack, openAuthModal } = useNavigationStore();
   const { currentSection, setSection } = useAdminStore();
   const { loading, isAdmin, isSuperAdmin, adminProfile, hasPermission, error } = useAdminAuth();
+  const authUser = useAuthStore((s) => s.user);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const visibleSections = SECTIONS.filter((s) => {
@@ -69,6 +71,35 @@ export function AdminDashboardView() {
   }
 
   if (!isAdmin) {
+    // Not logged in at all — prompt login
+    if (!authUser) {
+      return (
+        <div className="h-screen w-full flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: 'var(--bg-primary)' }}>
+          <ShieldAlert className="w-12 h-12 text-amber-500" />
+          <h1 className="font-heading font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Admin Login Required</h1>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            Please sign in with your administrator credentials to access this panel.
+          </p>
+          <div className="flex gap-3 mt-2">
+            <button
+              onClick={() => { goBack(); openAuthModal('login'); }}
+              className="px-6 py-3 rounded-xl gradient-emerald text-white font-semibold"
+            >
+              Sign In as Admin
+            </button>
+            <button
+              onClick={goBack}
+              className="px-6 py-3 rounded-xl border text-sm font-medium"
+              style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Logged in but not an admin
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: 'var(--bg-primary)' }}>
         <ShieldAlert className="w-12 h-12 text-red-500" />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, HandHeart, Phone, MessageCircle, Copy, CheckCircle, ExternalLink } from 'lucide-react';
+import { Heart, HandHeart, Phone, Copy, CheckCircle, ExternalLink } from 'lucide-react';
 import { CampaignCard } from '@/components/cards/CampaignCard';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';

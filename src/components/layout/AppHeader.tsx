@@ -6,6 +6,7 @@ import type { ViewId } from '@/types';
 
 const VIEW_TITLES: Record<ViewId, string> = {
   home: '',
+  landing: '',
   videos: 'Video Lectures',
   audio: 'Audio Lectures',
   donate: 'Donate',

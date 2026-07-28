@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Download, ArrowRight, Image as ImageIcon, Video as VideoIcon, Play, LogIn, Sparkles, BookOpen, Music, Shield, ArrowUpRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Download, ArrowRight, Image as ImageIcon, Video as VideoIcon, Play } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';
 import { CategoryChip } from '@/components/ui-custom/CategoryChip';
@@ -12,18 +12,15 @@ import { BannerCarousel } from '@/components/banners/BannerCarousel';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useVideoStore } from '@/stores/videoStore';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
-import { useAuthStore } from '@/stores/authStore';
 import { collection, query, onSnapshot, orderBy, where, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { CATEGORIES, DAILY_REMINDER } from '@/lib/data';
 import type { Video, AudioTrack, Campaign, GalleryImage } from '@/types';
 
 export function HomeView() {
-  const { setActiveTab, navigateTo, openAuthModal } = useNavigationStore();
+  const { setActiveTab, navigateTo } = useNavigationStore();
   const videoStore = useVideoStore();
   const { showInstall, handleInstallClick } = usePWAInstall();
-  const { user } = useAuthStore();
-
   const [activeCategory, setActiveCategory] = useState('All');
   const [videos, setVideos] = useState<Video[]>([]);
   const [recentAudio, setRecentAudio] = useState<AudioTrack[]>([]);
@@ -110,7 +107,7 @@ export function HomeView() {
 
   return (
     <div className="pb-4">
-      {/* 1. HERO SECTION (Dynamic welcome / customized message based on user session) */}
+      {/* Hero Banner */}
       <ScrollReveal className="relative px-4 pt-6 pb-6 overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url(/images/divider-pattern.jpg)', backgroundSize: '300px' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/50 to-transparent dark:from-emerald-900/10 pointer-events-none" />
@@ -120,120 +117,54 @@ export function HomeView() {
             Assalamu Alaikum
           </motion.p>
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="font-heading font-bold text-2xl mt-1 text-gradient-emerald">
-            {user ? `Welcome Back, ${user.displayName || 'Learner'}` : 'Welcome to Salaf Platform'}
+            Welcome to Salaf Platform
           </motion.h1>
-          <p className="text-xs max-w-md mx-auto mt-2 px-4" style={{ color: 'var(--text-muted)' }}>
-            Your portal to authentic Islamic knowledge, lectures, publications, beautiful recitations, and noble charity campaigns.
-          </p>
 
           {showInstall && (
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="mt-4">
               <button
                 onClick={handleInstallClick}
-                className="inline-flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-semibold transition-all shadow-lg hover:shadow-emerald-500/25 active:scale-95"
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-emerald-500/25 active:scale-95"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-4 h-4" />
                 Install Salaf App
               </button>
             </motion.div>
           )}
         </div>
 
-        {/* Daily Reminder Quote */}
+        {/* Daily Reminder */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-5">
           <GlassCard className="relative overflow-hidden">
             <div className="h-1 w-full gradient-emerald rounded-t-2xl absolute top-0 left-0" />
-            <p className="text-base font-arabic italic leading-relaxed text-center" style={{ color: 'var(--text-primary)' }}>
+            <p className="text-lg font-arabic italic leading-relaxed text-center" style={{ color: 'var(--text-primary)' }}>
               "{DAILY_REMINDER.quote}"
             </p>
-            <p className="text-[11px] mt-2 text-right font-medium" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm mt-2 text-right font-medium" style={{ color: 'var(--text-muted)' }}>
               — {DAILY_REMINDER.source}
             </p>
           </GlassCard>
         </motion.div>
       </ScrollReveal>
 
-      {/* 2. DYNAMIC LOGIN & GET STARTED OPTIONS (Disappears smoothly with AnimatePresence when logged in) */}
-      <AnimatePresence>
-        {!user && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-            className="px-4 overflow-hidden mb-6"
-          >
-            <GlassCard className="relative overflow-hidden border-2 border-dashed border-emerald-500/30 flex flex-col items-center p-6 text-center shadow-md">
-              <div className="absolute top-0 right-0 p-3 pointer-events-none opacity-25">
-                <Sparkles className="w-8 h-8 text-emerald-500" />
-              </div>
-              <h2 className="font-heading font-bold text-lg text-emerald-600 dark:text-emerald-400">Unlock Full Access</h2>
-              <p className="text-xs max-w-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
-                Create a free account or login to customize your library, ask questions directly to scholars, track notification alerts, and access premium courses.
-              </p>
-
-              <div className="flex gap-3 w-full max-w-xs mt-5">
-                <button
-                  onClick={() => openAuthModal('login')}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs shadow-md transition-all active:scale-95"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Sign In
-                </button>
-                <button
-                  onClick={() => openAuthModal('signup')}
-                  className="flex-1 inline-flex items-center justify-center gap-1 py-2.5 px-4 border border-emerald-500/50 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold rounded-xl text-xs transition-all active:scale-95"
-                >
-                  Create Account
-                </button>
-              </div>
-
-              {/* Unique key feature points */}
-              <div className="grid grid-cols-3 gap-2 mt-6 w-full pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
-                <div className="flex flex-col items-center">
-                  <BookOpen className="w-4 h-4 text-emerald-500 mb-1" />
-                  <span className="text-[9px] font-semibold" style={{ color: 'var(--text-primary)' }}>Read Articles</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Music className="w-4 h-4 text-emerald-500 mb-1" />
-                  <span className="text-[9px] font-semibold" style={{ color: 'var(--text-primary)' }}>Audio Library</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Shield className="w-4 h-4 text-emerald-500 mb-1" />
-                  <span className="text-[9px] font-semibold" style={{ color: 'var(--text-primary)' }}>Scholar Q&A</span>
-                </div>
-              </div>
-            </GlassCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 3. DYNAMIC DASHBOARD BANNERS CAROUSEL */}
-      <div className="px-4 mt-2">
+      {/* Banner Carousel */}
+      <div className="px-4 mt-4">
         <BannerCarousel />
       </div>
 
-      {/* 4. MAIN INTERACTIVE VIEWS (BROWSE TOPICS) */}
+      {/* Categories */}
       <div className="mt-6">
-        <div className="px-4 mb-3 flex items-center justify-between">
+        <div className="px-4 mb-3">
           <h2 className="font-heading font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Browse by Topic</h2>
-          {activeCategory !== 'All' && (
-            <button
-              onClick={() => setActiveCategory('All')}
-              className="text-xs font-semibold text-emerald-500 hover:underline"
-            >
-              Reset Filters
-            </button>
-          )}
         </div>
-        <div className="flex gap-2 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-2">
+        <div className="flex gap-2 px-4 overflow-x-auto scrollbar-hide snap-x-mandatory pb-1">
           {CATEGORIES.map((cat) => (
             <CategoryChip key={cat} label={cat} isActive={activeCategory === cat} onClick={() => setActiveCategory(cat)} />
           ))}
         </div>
       </div>
 
-      {/* Featured Lecture Highlight */}
+      {/* Prominent Video Highlight */}
       {featuredVideo && (
         <div className="mt-8 px-4">
           <SectionHeader title="Featured Lecture" action="View All" onAction={() => setActiveTab('videos')} />
@@ -302,35 +233,29 @@ export function HomeView() {
         </div>
       )}
 
-      {/* Gallery Highlights Grid - Modern custom grid aligned to UI/UX updates */}
+      {/* Gallery Highlights Grid */}
       {galleryImages.length > 0 && (
         <div className="mt-8 px-4">
           <SectionHeader title="Gallery Highlights" action="View Gallery" onAction={() => navigateTo('gallery')} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             {galleryImages.map((img, i) => (
               <ScrollReveal key={img.id} delay={i * 0.04}>
                 <div
                   onClick={() => navigateTo('gallery')}
-                  className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer border shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02]"
-                  style={{ borderColor: 'var(--border-color)', background: 'var(--bg-secondary)' }}
+                  className="aspect-square rounded-2xl overflow-hidden relative group cursor-pointer border shadow-sm"
+                  style={{ borderColor: 'var(--border-color)' }}
                 >
                   <img
                     src={img.imageURL}
                     alt={img.caption}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute top-2 right-2 bg-emerald-600/90 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] text-white font-medium">
-                    {img.category || 'Highlights'}
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <div className="p-2.5 rounded-full bg-white/20 backdrop-blur-md border border-white/35">
-                      <ArrowUpRight className="w-5 h-5 text-white" />
-                    </div>
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <ImageIcon className="w-6 h-6 text-white" />
                   </div>
                   {img.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
-                      <p className="text-white text-xs font-semibold truncate leading-snug">{img.caption}</p>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-6">
+                      <p className="text-white text-[10px] font-medium truncate">{img.caption}</p>
                     </div>
                   )}
                 </div>
@@ -339,7 +264,7 @@ export function HomeView() {
           </div>
           <button
             onClick={() => navigateTo('gallery')}
-            className="w-full mt-3 h-12 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 hover:border-emerald-500 hover:bg-emerald-500/5 group transition-all text-xs font-semibold"
+            className="w-full mt-3 h-12 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 hover:border-emerald-500 group transition-colors text-sm font-semibold"
             style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}
           >
             <ImageIcon className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
@@ -349,7 +274,7 @@ export function HomeView() {
         </div>
       )}
 
-      {/* Trending Reminders */}
+      {/* Trending */}
       {trendingVideos.length > 0 && (
         <div className="mt-8">
           <SectionHeader title="Trending Now" action="View All" onAction={() => setActiveTab('videos')} icon={<span className="text-amber-500 text-lg">&#128293;</span>} />
@@ -365,7 +290,7 @@ export function HomeView() {
         </div>
       )}
 
-      {/* Recent Audio Tracks */}
+      {/* Recent Audio - Shows 2 Most Recent */}
       {recentAudio.length > 0 && (
         <div className="mt-8">
           <SectionHeader title="Recent Audio" action="View All" onAction={() => setActiveTab('audio')} />
@@ -379,7 +304,7 @@ export function HomeView() {
         </div>
       )}
 
-      {/* Fundraising & Campaigns */}
+      {/* Fundraising Highlight */}
       {featuredCampaign && (
         <div className="mt-8 px-4">
           <SectionHeader title="Fundraising Highlight" action="Donate" onAction={() => setActiveTab('donate')} />
@@ -390,7 +315,7 @@ export function HomeView() {
       {/* Footer */}
       <div className="mt-10 pb-8 text-center">
         <div className="h-px mx-8 mb-6" style={{ background: 'var(--border-color)' }} />
-        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Salaf Platform</p>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Salaf Platform</p>
         <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Made with love for the Ummah</p>
       </div>
     </div>

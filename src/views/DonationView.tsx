@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUserContentStore } from '@/stores/userContentStore';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { formatCurrency } from '@/lib/utils';
+import { formatUGX } from '@/lib/utils';
 import type { Campaign } from '@/types';
 
 export function DonationView() {
@@ -201,7 +201,7 @@ export function DonationView() {
           <div className="h-px mb-6" style={{ background: 'var(--border-color)' }} />
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-heading font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Your Donations</h3>
-            <span className="font-bold text-emerald-500">{formatCurrency(totalDonated)}</span>
+            <span className="font-bold text-emerald-500">{formatUGX(totalDonated)}</span>
           </div>
           {donations.length === 0 ? (
             <p className="text-sm italic py-4" style={{ color: 'var(--text-muted)' }}>You haven't made any donations yet.</p>
@@ -215,7 +215,7 @@ export function DonationView() {
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{d.date}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold text-emerald-500">{formatCurrency(d.amount)}</p>
+                      <p className="text-sm font-bold text-emerald-500">{formatUGX(d.amount)}</p>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium capitalize">
                         {d.status}
                       </span>

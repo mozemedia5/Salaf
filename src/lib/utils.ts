@@ -22,6 +22,12 @@ export function formatCurrency(cents: number): string {
   return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0 });
 }
 
+/** Format Ugandan Shillings — amounts stored as whole numbers (no cents) */
+export function formatUGX(amount: number): string {
+  if (!amount && amount !== 0) return 'UGX 0';
+  return 'UGX ' + Math.round(amount).toLocaleString('en-UG');
+}
+
 export function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });

@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Play, Eye, Heart, Search, X } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
-import { VIDEO_PRESET_THUMBNAILS } from '@/lib/data';
-import { Check } from 'lucide-react';
+import { ThumbnailPicker } from '@/components/ui-custom/ThumbnailPicker';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
@@ -38,6 +37,7 @@ export function VideoManagement() {
     isActive: true,
   });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'videos'));
@@ -346,52 +346,25 @@ export function VideoManagement() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>Duration</label>
-                  <input
-                    type="text"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="45:23"
-                    className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
-                    style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
-                  />
-                </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>Duration</label>
+                <input
+                  type="text"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                  placeholder="45:23"
+                  className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
+                  style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                />
               </div>
 
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>Select Professional Video Thumbnail *</label>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-48 overflow-y-auto p-2 rounded-xl border" style={{ borderColor: 'var(--border-color)', background: 'var(--bg-primary)' }}>
-                  {VIDEO_PRESET_THUMBNAILS.map((preset) => {
-                    const isSelected = formData.thumbnailURL === preset.url;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, thumbnailURL: preset.url })}
-                        className={cn(
-                          "relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
-                          isSelected ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-transparent"
-                        )}
-                        title={preset.name}
-                      >
-                        <img src={preset.url} alt={preset.name} className="w-full h-full object-cover" />
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                            <span className="p-1 rounded-full bg-emerald-500 text-white">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </span>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                {!formData.thumbnailURL && (
-                  <p className="text-[10px] text-amber-500 font-medium mt-1">Please select a thumbnail preset above to proceed smoothly.</p>
-                )}
-              </div>
+              <ThumbnailPicker
+                value={formData.thumbnailURL}
+                onChange={(url) => setFormData({ ...formData, thumbnailURL: url })}
+                label="Video Thumbnail (choose from 30+ Islamic images or upload)"
+                type="video"
+                onUploadStateChange={setUploading}
+              />
 
               <div className="flex items-center gap-2">
                 <input
@@ -405,7 +378,7 @@ export function VideoManagement() {
 
               <button
                 onClick={handleSave}
-                disabled={saving || !formData.title || !formData.videoURL || !formData.thumbnailURL}
+                disabled={saving || uploading || !formData.title || !formData.videoURL}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow disabled:opacity-50 transition-all"
               >
                 {saving ? 'Saving...' : editingVideo ? 'Update Video' : 'Add Video'}

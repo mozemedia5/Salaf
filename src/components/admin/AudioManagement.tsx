@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Pencil, Trash2, Headphones, Search, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Headphones, Search, X, Link } from "lucide-react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { AUDIO_PRESET_THUMBNAILS } from "@/lib/data";
-import { Check } from "lucide-react";
+import { ThumbnailPicker } from "@/components/ui-custom/ThumbnailPicker";
 import { AudioUploadField } from "@/components/ui-custom/AudioUploadField";
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -17,11 +16,8 @@ export function formatDuration(seconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
-
   const paddedSeconds = s.toString().padStart(2, "0");
-  if (h > 0) {
-    return `${h}:${m.toString().padStart(2, "0")}:${paddedSeconds}`;
-  }
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${paddedSeconds}`;
   return `${m}:${paddedSeconds}`;
 }
 
@@ -31,6 +27,7 @@ export function AudioManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingTrack, setEditingTrack] = useState<AudioTrack | null>(null);
+  const [audioUrlInput, setAudioUrlInput] = useState("");
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -63,14 +60,11 @@ export function AudioManagement() {
     const q = query(collection(db, "audio"));
     const unsub = onSnapshot(q, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as AudioTrack));
-
-      // Sort in-memory by createdAt desc to avoid composite index requirements
       data.sort((a, b) => {
         const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return timeB - timeA;
       });
-
       setAudioTracks(data);
     }, (err) => {
       console.error("Firestore Audio listening error:", err);
@@ -78,7 +72,6 @@ export function AudioManagement() {
     return () => unsub();
   }, []);
 
-  // Filter visibility: regular admins only see their own uploads
   const visibleTracks = audioTracks.filter((track) => {
     if (isSuperAdmin) return true;
     return track.uploadedBy === currentUser?.uid || track.createdBy === currentUser?.uid;
@@ -90,16 +83,18 @@ export function AudioManagement() {
   );
 
   const handleSave = async () => {
-    if (!formData.title || !formData.audioURL) return;
+    // Allow save if we have a title and any audio URL (uploaded or manually entered)
+    const effectiveAudioUrl = formData.audioURL || audioUrlInput.trim();
+    if (!formData.title || !effectiveAudioUrl) return;
+
     setSaving(true);
     try {
       const data: any = {
         ...formData,
-        // Sync spellings for complete robustness
-        audioURL: formData.audioURL,
-        audioUrl: formData.audioURL,
+        audioURL: effectiveAudioUrl,
+        audioUrl: effectiveAudioUrl,
         playCount: editingTrack?.playCount || "0",
-        scholarId: editingTrack?.scholarId || "s1", // Default scholar ID
+        scholarId: editingTrack?.scholarId || "s1",
         updatedAt: serverTimestamp(),
         uploadedBy: editingTrack?.uploadedBy || currentUser?.uid,
         createdBy: editingTrack?.createdBy || currentUser?.uid,
@@ -119,19 +114,18 @@ export function AudioManagement() {
       resetForm();
     } catch (err) {
       console.error("Error saving audio track:", err);
+      alert("Failed to save. Check console for details.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (track: AudioTrack) => {
-    // Only super admin or the uploader can delete
     const allowed = isSuperAdmin || track.uploadedBy === currentUser?.uid || track.createdBy === currentUser?.uid;
     if (!allowed) {
-      alert("You are not authorized to delete this track. Only the original uploader or super admin can delete it.");
+      alert("You are not authorized to delete this track.");
       return;
     }
-
     if (!confirm("Are you sure you want to delete this audio track?")) return;
     await deleteDoc(doc(db, "audio", track.id));
   };
@@ -157,6 +151,7 @@ export function AudioManagement() {
       duration: track.duration || "0:00",
       isActive: track.isActive !== false,
     });
+    setAudioUrlInput("");
     setShowModal(true);
   };
 
@@ -173,7 +168,10 @@ export function AudioManagement() {
       duration: "0:00",
       isActive: true,
     });
+    setAudioUrlInput("");
   };
+
+  const hasAudio = !!(formData.audioURL || audioUrlInput.trim());
 
   return (
     <div className="space-y-4">
@@ -218,7 +216,6 @@ export function AudioManagement() {
             className="p-4 rounded-2xl flex items-start gap-4"
             style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)" }}
           >
-            {/* Display Photo / Thumbnail */}
             <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
               {track.thumbnailURL ? (
                 <img src={track.thumbnailURL} alt="" className="w-full h-full object-cover" />
@@ -229,8 +226,6 @@ export function AudioManagement() {
                 {track.duration}
               </span>
             </div>
-
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -238,35 +233,22 @@ export function AudioManagement() {
                   <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{track.scholarName} &middot; {track.category}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => openEditModal(track)}
-                    className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                  >
+                  <button onClick={() => openEditModal(track)} className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
                     <Pencil className="w-3.5 h-3.5 text-emerald-500" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(track)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  >
+                  <button onClick={() => handleDelete(track)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                     <Trash2 className="w-3.5 h-3.5 text-red-500" />
                   </button>
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-2">
-                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                  Plays: {track.playCount || 0}
-                </span>
+                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>Plays: {track.playCount || 0}</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                  track.isActive !== false
-                    ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-500"
+                  track.isActive !== false ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600" : "bg-gray-100 dark:bg-gray-800 text-gray-500"
                 }`}>
                   {track.isActive !== false ? "Active" : "Inactive"}
                 </span>
-                <button
-                  onClick={() => handleToggleActive(track)}
-                  className="text-[10px] text-emerald-500 hover:text-emerald-600 font-medium ml-auto"
-                >
+                <button onClick={() => handleToggleActive(track)} className="text-[10px] text-emerald-500 hover:text-emerald-600 font-medium ml-auto">
                   {track.isActive !== false ? "Deactivate" : "Activate"}
                 </button>
               </div>
@@ -276,7 +258,7 @@ export function AudioManagement() {
 
         {filteredTracks.length === 0 && (
           <div className="text-center py-10" style={{ color: "var(--text-muted)" }}>
-            No audio tracks found. Click "Add Audio Track" to upload your first audio!
+            No audio tracks found. Click "Add Audio Track" to add one!
           </div>
         )}
       </div>
@@ -355,40 +337,15 @@ export function AudioManagement() {
                 </div>
               </div>
 
-              {/* Display Photo (thumbnailURL) using Presets */}
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Select Professional Audio Thumbnail *</label>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-48 overflow-y-auto p-2 rounded-xl border animate-none" style={{ borderColor: "var(--border-color)", background: "var(--bg-primary)" }}>
-                  {AUDIO_PRESET_THUMBNAILS.map((preset) => {
-                    const isSelected = formData.thumbnailURL === preset.url;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, thumbnailURL: preset.url })}
-                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                          isSelected ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-transparent"
-                        }`}
-                        title={preset.name}
-                      >
-                        <img src={preset.url} alt={preset.name} className="w-full h-full object-cover" />
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                            <span className="p-1 rounded-full bg-emerald-500 text-white">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </span>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                {!formData.thumbnailURL && (
-                  <p className="text-[10px] text-amber-500 font-medium mt-1">Please select an audio thumbnail preset above.</p>
-                )}
-              </div>
+              {/* Thumbnail picker — 30+ Islamic images */}
+              <ThumbnailPicker
+                value={formData.thumbnailURL}
+                onChange={(url) => setFormData({ ...formData, thumbnailURL: url })}
+                label="Display Photo (Thumbnail)"
+                type="audio"
+              />
 
-              {/* Audio Upload using AudioUploadField */}
+              {/* Audio Upload */}
               <div>
                 <AudioUploadField
                   folder="salaf/audio"
@@ -403,10 +360,31 @@ export function AudioManagement() {
                       audioDurationSeconds: durationSeconds,
                       duration: formatDuration(durationSeconds)
                     });
+                    setAudioUrlInput("");
                   }}
                   onUploadStateChange={setUploadingAudio}
                 />
               </div>
+
+              {/* Fallback: paste audio URL directly */}
+              {!formData.audioURL && (
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>
+                    — or paste audio URL directly *
+                  </label>
+                  <div className="relative">
+                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                    <input
+                      type="text"
+                      value={audioUrlInput}
+                      onChange={(e) => setAudioUrlInput(e.target.value)}
+                      placeholder="https://... (CDN or direct audio URL)"
+                      className="w-full h-11 pl-10 pr-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
+                      style={{ background: "var(--bg-primary)", borderColor: "var(--border-color)", color: "var(--text-primary)" }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-2">
                 <input
@@ -420,11 +398,17 @@ export function AudioManagement() {
 
               <button
                 onClick={handleSave}
-                disabled={saving || uploadingAudio || !formData.title || !formData.audioURL || !formData.thumbnailURL}
+                disabled={saving || uploadingAudio || !formData.title || !hasAudio}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow disabled:opacity-50 transition-all"
               >
                 {saving ? "Saving..." : editingTrack ? "Update Audio Track" : "Add Audio Track"}
               </button>
+
+              {!hasAudio && formData.title && (
+                <p className="text-center text-xs text-amber-500">
+                  ⚠ Upload an audio file or paste a URL above to enable saving.
+                </p>
+              )}
             </div>
           </motion.div>
         </motion.div>

@@ -200,7 +200,7 @@ export function DonationManagement() {
                 onUploaded={(url) => setFormData({ ...formData, imageURL: url })}
                 onUploadStateChange={setUploading}
               />
-              <input type="number" value={formData.targetAmount} onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })} placeholder="Target amount ($) *"
+              <input type="number" value={formData.targetAmount} onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })} placeholder="Target amount (UGX) e.g. 5000000 *"
                 className="w-full h-11 px-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
                 style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
 

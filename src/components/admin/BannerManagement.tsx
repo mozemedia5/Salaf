@@ -38,7 +38,6 @@ export function BannerManagement() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [bannerStats, setBannerStats] = useState<Record<string, BannerStats>>({});
-  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy('createdAt', 'desc'));
@@ -53,7 +52,6 @@ export function BannerManagement() {
     const fetchBannerStats = async () => {
       if (banners.length === 0) return;
       
-      setLoadingStats(true);
       try {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 30);
@@ -99,8 +97,6 @@ export function BannerManagement() {
         setBannerStats(statsMap);
       } catch (error) {
         console.error('Error fetching banner stats:', error);
-      } finally {
-        setLoadingStats(false);
       }
     };
     

@@ -33,6 +33,8 @@ export function BannerCarousel() {
   const [direction, setDirection] = useState(0);
   const [expanded, setExpanded] = useState(false);
 
+  const currentBanner = banners[currentIndex];
+
   useEffect(() => {
     const q = query(collection(db, 'banners'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -76,7 +78,7 @@ export function BannerCarousel() {
     if (currentBanner) {
       trackBannerImpression(currentBanner.id, currentBanner.title);
     }
-  }, [currentIndex]);
+  }, [currentIndex, currentBanner]);
 
   // Track initial impression
   useEffect(() => {
@@ -101,8 +103,7 @@ export function BannerCarousel() {
     return null;
   }
 
-  const currentBanner = banners[currentIndex];
-  const hasDetails = Boolean(currentBanner.details || currentBanner.description);
+  const hasDetails = currentBanner ? Boolean(currentBanner.details || currentBanner.description) : false;
 
   const goToPrevious = () => {
     setDirection(-1);

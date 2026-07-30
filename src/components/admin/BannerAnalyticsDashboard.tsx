@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Eye, MousePointer, TrendingUp, Users, Clock, ExternalLink, 
-  BarChart3, Calendar, ChevronDown, RefreshCw, Search,
-  TrendingDown, Award, Hash, Globe, Smartphone, Target
+  Eye, MousePointer, TrendingUp, Users, ExternalLink,
+  BarChart3, Calendar, RefreshCw, Search,
+  Award, Hash, Globe, Smartphone, Target
 } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
 import { 
@@ -12,7 +12,7 @@ import {
   getTimeframeStats,
   getBannerAnalytics 
 } from '@/lib/bannerAnalytics';
-import type { BannerAnalytics, TikTokCreatorInsight, GoogleTrendData } from '@/types';
+import type { TikTokCreatorInsight, GoogleTrendData } from '@/types';
 
 type TimeRange = '7' | '14' | '30' | '90';
 
@@ -48,7 +48,7 @@ export function BannerAnalyticsDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [bannerStats, setBannerStats] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<any[]>([]);
-  const [selectedBannerId, setSelectedBannerId] = useState<string>('all');
+  const selectedBannerId = 'all';
   const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'tiktok' | 'trends-search'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -430,7 +430,7 @@ export function BannerAnalyticsDashboard() {
                   </div>
                 </div>
               ))
-            )}
+            }
             {bannerStats.length === 0 && (
               <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>No data available</p>
             )}

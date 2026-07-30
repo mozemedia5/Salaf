@@ -1,16 +1,25 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, Search, X, Megaphone, ExternalLink, MoreVertical, Calendar } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Megaphone, ExternalLink, MoreVertical, Calendar, BarChart3, Eye, MousePointer } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
-import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc, orderBy, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Banner } from '@/types';
 
 const CATEGORIES = ['Quran', 'Hadith', 'Aqeedah', 'Seerah', 'Youth', 'Ramadan', 'Events'];
 
+interface BannerStats {
+  bannerId: string;
+  totalImpressions: number;
+  totalClicks: number;
+  totalDetailsViews: number;
+  totalLinkCompletions: number;
+  ctr: string;
+}
+
 export function BannerManagement() {
-  const { banners, setBanners } = useAdminStore();
+  const { banners, setBanners, setSection } = useAdminStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -28,6 +37,8 @@ export function BannerManagement() {
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [bannerStats, setBannerStats] = useState<Record<string, BannerStats>>({});
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'banners'), orderBy('createdAt', 'desc'));
@@ -36,6 +47,65 @@ export function BannerManagement() {
     });
     return () => unsub();
   }, []);
+
+  // Fetch analytics stats for all banners
+  useEffect(() => {
+    const fetchBannerStats = async () => {
+      if (banners.length === 0) return;
+      
+      setLoadingStats(true);
+      try {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+        const startDateStr = startDate.toISOString().split('T')[0];
+        
+        const q = query(
+          collection(db, 'bannerAnalytics'),
+          where('date', '>=', startDateStr)
+        );
+        
+        const snapshot = await getDocs(q);
+        const statsMap: Record<string, BannerStats> = {};
+        
+        snapshot.docs.forEach(doc => {
+          const data = doc.data();
+          const bannerId = data.bannerId;
+          
+          if (!statsMap[bannerId]) {
+            statsMap[bannerId] = {
+              bannerId,
+              totalImpressions: 0,
+              totalClicks: 0,
+              totalDetailsViews: 0,
+              totalLinkCompletions: 0,
+              ctr: '0.00'
+            };
+          }
+          
+          statsMap[bannerId].totalImpressions += data.impressions || 0;
+          statsMap[bannerId].totalClicks += data.clicks || 0;
+          statsMap[bannerId].totalDetailsViews += data.detailsViews || 0;
+          statsMap[bannerId].totalLinkCompletions += data.linkCompletions || 0;
+        });
+        
+        // Calculate CTR
+        Object.keys(statsMap).forEach(bannerId => {
+          const stats = statsMap[bannerId];
+          stats.ctr = stats.totalImpressions > 0 
+            ? (stats.totalClicks / stats.totalImpressions * 100).toFixed(2) 
+            : '0.00';
+        });
+        
+        setBannerStats(statsMap);
+      } catch (error) {
+        console.error('Error fetching banner stats:', error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    
+    fetchBannerStats();
+  }, [banners]);
 
   const filtered = banners.filter(b => b.title?.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -121,10 +191,20 @@ export function BannerManagement() {
           <h2 className="font-heading font-bold text-xl" style={{ color: 'var(--text-primary)' }}>Banner Management</h2>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{filtered.length} banners &middot; Super Admin only</p>
         </div>
-        <button onClick={() => { setEditingBanner(null); setFormData({ title: '', imageURL: '', category: 'Quran', link: '', description: '', details: '', isActive: true, expirationDays: 30 }); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-emerald text-white text-sm font-semibold shadow-glow">
-          <Plus className="w-4 h-4" /> Add Banner
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setSection('analytics')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/10"
+            style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+          >
+            <BarChart3 className="w-4 h-4 text-blue-500" />
+            View Full Analytics
+          </button>
+          <button onClick={() => { setEditingBanner(null); setFormData({ title: '', imageURL: '', category: 'Quran', link: '', description: '', details: '', isActive: true, expirationDays: 30 }); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-emerald text-white text-sm font-semibold shadow-glow">
+            <Plus className="w-4 h-4" /> Add Banner
+          </button>
+        </div>
       </div>
 
       <div className="relative">
@@ -135,40 +215,69 @@ export function BannerManagement() {
       </div>
 
       <div className="space-y-3">
-        {filtered.map((banner, i) => (
-          <motion.div key={banner.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-            className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-            <div className="flex items-start gap-4">
-              <div className="w-24 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-800">
-                {banner.imageURL ? <img src={banner.imageURL} alt="" className="w-full h-full object-cover" /> : <Megaphone className="w-6 h-6 m-4 text-gray-400" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{banner.title}</h3>
-                    {getStatusBadge(banner)}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => { setSelectedBanner(banner); setShowDetailsModal(true); }} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Details">
-                      <MoreVertical className="w-3.5 h-3.5 text-blue-500" />
-                    </button>
-                    <button onClick={() => openEdit(banner)} className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20"><Pencil className="w-3.5 h-3.5 text-emerald-500" /></button>
-                    <button onClick={() => handleDelete(banner.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
-                  </div>
+        {filtered.map((banner, i) => {
+          const stats = bannerStats[banner.id];
+          return (
+            <motion.div key={banner.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+              className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+              <div className="flex items-start gap-4">
+                <div className="w-24 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-800">
+                  {banner.imageURL ? <img src={banner.imageURL} alt="" className="w-full h-full object-cover" /> : <Megaphone className="w-6 h-6 m-4 text-gray-400" />}
                 </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-[10px] text-emerald-600 font-medium">{banner.category}</span>
-                  {banner.expiresAt && (
-                    <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                      <Calendar className="w-3 h-3" /> Expires: {new Date(banner.expiresAt).toLocaleDateString()}
-                    </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{banner.title}</h3>
+                      {getStatusBadge(banner)}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => { setSelectedBanner(banner); setShowDetailsModal(true); }} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Details">
+                        <MoreVertical className="w-3.5 h-3.5 text-blue-500" />
+                      </button>
+                      <button onClick={() => openEdit(banner)} className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20"><Pencil className="w-3.5 h-3.5 text-emerald-500" /></button>
+                      <button onClick={() => handleDelete(banner.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[10px] text-emerald-600 font-medium">{banner.category}</span>
+                    {banner.expiresAt && (
+                      <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                        <Calendar className="w-3 h-3" /> Expires: {new Date(banner.expiresAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                  {banner.description && <p className="text-xs mt-1 line-clamp-1" style={{ color: 'var(--text-muted)' }}>{banner.description}</p>}
+                  
+                  {/* Analytics Stats */}
+                  {stats && (
+                    <div className="flex items-center gap-4 mt-2 pt-2" style={{ borderTop: '1px dashed var(--border-color)' }}>
+                      <div className="flex items-center gap-1.5">
+                        <Eye className="w-3 h-3 text-blue-500" />
+                        <span className="text-[10px] font-medium" style={{ color: 'var(--text-primary)' }}>
+                          {stats.totalImpressions.toLocaleString()}
+                        </span>
+                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>views</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MousePointer className="w-3 h-3 text-emerald-500" />
+                        <span className="text-[10px] font-medium" style={{ color: 'var(--text-primary)' }}>
+                          {stats.totalClicks.toLocaleString()}
+                        </span>
+                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>clicks</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-medium ${parseFloat(stats.ctr) >= 5 ? 'text-emerald-500' : parseFloat(stats.ctr) >= 2 ? 'text-amber-500' : 'text-gray-500'}`}>
+                          {stats.ctr}%
+                        </span>
+                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>CTR</span>
+                      </div>
+                    </div>
                   )}
                 </div>
-                {banner.description && <p className="text-xs mt-1 line-clamp-1" style={{ color: 'var(--text-muted)' }}>{banner.description}</p>}
               </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Add/Edit Modal */}

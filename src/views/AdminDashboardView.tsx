@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Play, FileText, Image as ImageIcon, HandHeart,
-  LayoutPanelTop, MessageCircle, Users, Bell, ChevronLeft, Loader2, ShieldAlert, Menu, X, Headphones
+  LayoutPanelTop, MessageCircle, Users, Bell, ChevronLeft, Loader2, ShieldAlert, Menu, X, Headphones, BarChart3
 } from 'lucide-react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAdminStore } from '@/stores/adminStore';
@@ -18,6 +18,7 @@ import { BannerManagement } from '@/components/admin/BannerManagement';
 import { QuestionManagement } from '@/components/admin/QuestionManagement';
 import { AdminManagement } from '@/components/admin/AdminManagement';
 import { NotificationManagement } from '@/components/admin/NotificationManagement';
+import { BannerAnalyticsDashboard } from '@/components/admin/BannerAnalyticsDashboard';
 
 interface SectionDef {
   id: AdminSection;
@@ -35,6 +36,7 @@ const SECTIONS: SectionDef[] = [
   { id: 'gallery', label: 'Gallery', icon: ImageIcon, permission: 'canManageGallery' },
   { id: 'donations', label: 'Donations', icon: HandHeart, permission: 'canManageDonations' },
   { id: 'banners', label: 'Banners', icon: LayoutPanelTop, superAdminOnly: true },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3, superAdminOnly: true },
   { id: 'questions', label: 'Questions', icon: MessageCircle, permission: 'canAnswerQuestions' },
   { id: 'admins', label: 'Admins', icon: Users, superAdminOnly: true },
   { id: 'notifications', label: 'Notifications', icon: Bell, permission: 'canManageNotifications' },
@@ -95,6 +97,7 @@ export function AdminDashboardView() {
       case 'gallery': return <GalleryManagement />;
       case 'donations': return <DonationManagement />;
       case 'banners': return <BannerManagement />;
+      case 'analytics': return <BannerAnalyticsDashboard />;
       case 'questions': return <QuestionManagement />;
       case 'admins': return <AdminManagement />;
       case 'notifications': return <NotificationManagement />;

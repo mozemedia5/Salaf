@@ -196,3 +196,60 @@ export type TabId = 'home' | 'videos' | 'audio' | 'donate' | 'profile';
 export type ViewId = TabId | 'articles' | 'gallery' | 'search' | 'notifications' | 'article-detail' | 'video-player' | 'audio-player' | 'privacy-policy' | 'terms-of-service' | 'admin-dashboard' | 'user-questions';
 
 export type AdminSection = 'overview' | 'videos' | 'audio' | 'articles' | 'gallery' | 'donations' | 'banners' | 'questions' | 'admins' | 'notifications' | 'analytics';
+
+export interface BannerAnalytics {
+  id: string;
+  bannerId: string;
+  bannerTitle: string;
+  date: string;
+  impressions: number;
+  clicks: number;
+  detailsViews: number;
+  linkCompletions: number;
+  uniqueUsers: number;
+  clickThroughRate: number;
+  avgTimeOnBanner: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BannerEngagementRecord {
+  id: string;
+  bannerId: string;
+  userId?: string;
+  eventType: 'impression' | 'click' | 'details_view' | 'link_open' | 'link_complete';
+  timestamp: string;
+  deviceType?: 'mobile' | 'tablet' | 'desktop';
+  country?: string;
+  city?: string;
+  referrer?: string;
+}
+
+export interface BannerTrendData {
+  date: string;
+  impressions: number;
+  clicks: number;
+  detailsViews: number;
+  linkCompletions: number;
+  ctr: number;
+}
+
+export interface TikTokCreatorInsight {
+  id: string;
+  creatorName: string;
+  handle: string;
+  followers: number;
+  avgLikes: number;
+  avgViews: number;
+  engagementRate: number;
+  category: string;
+  lastUpdated: string;
+}
+
+export interface GoogleTrendData {
+  keyword: string;
+  interest: number;
+  timeframe: string;
+  relatedTopics: { topic: string; value: number }[];
+  relatedQueries: { query: string; value: number }[];
+}

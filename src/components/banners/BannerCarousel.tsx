@@ -5,6 +5,12 @@ import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { BANNERS } from '@/lib/data';
 import type { Banner } from '@/types';
+import { 
+  trackBannerImpression, 
+  trackBannerClick, 
+  trackBannerDetailsView, 
+  trackBannerLinkOpen 
+} from '@/lib/bannerAnalytics';
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -66,7 +72,19 @@ export function BannerCarousel() {
   // Reset the expanded details panel whenever the active banner changes.
   useEffect(() => {
     setExpanded(false);
+    // Track impression when banner changes
+    if (currentBanner) {
+      trackBannerImpression(currentBanner.id, currentBanner.title);
+    }
   }, [currentIndex]);
+
+  // Track initial impression
+  useEffect(() => {
+    if (currentBanner) {
+      trackBannerImpression(currentBanner.id, currentBanner.title);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Autoplay functionality
   useEffect(() => {
@@ -98,6 +116,10 @@ export function BannerCarousel() {
 
   const handleBannerTap = () => {
     if (currentBanner.link) {
+      // Track link click
+      trackBannerClick(currentBanner.id, currentBanner.title);
+      trackBannerLinkOpen(currentBanner.id, currentBanner.title);
+      
       const href = /^https?:\/\//i.test(currentBanner.link)
         ? currentBanner.link
         : `https://${currentBanner.link}`;
@@ -181,7 +203,14 @@ export function BannerCarousel() {
         {/* Expand details toggle */}
         {hasDetails && (
           <button
-            onClick={(e) => { e.stopPropagation(); setExpanded((prev) => !prev); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              // Track details view when expanded
+              if (!expanded) {
+                trackBannerDetailsView(currentBanner.id, currentBanner.title);
+              }
+              setExpanded((prev) => !prev); 
+            }}
             className="absolute bottom-3 right-3 z-10 p-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm"
             aria-label={expanded ? 'Hide details' : 'Show details'}
           >
@@ -212,7 +241,7 @@ export function BannerCarousel() {
               {currentBanner.link && (
                 <button
                   onClick={handleBannerTap}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-500 hover:text-emerald-600 mt-3 animate-pulse"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-500 hover:text-emerald-600 mt-3"
                 >
                   Learn more →
                 </button>

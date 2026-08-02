@@ -234,22 +234,12 @@ export interface BannerTrendData {
   ctr: number;
 }
 
-export interface TikTokCreatorInsight {
+// Internal Trend Record - For tracking trends based on your own app data
+export interface TrendRecord {
   id: string;
-  creatorName: string;
-  handle: string;
-  followers: number;
-  avgLikes: number;
-  avgViews: number;
-  engagementRate: number;
+  date: string;
   category: string;
-  lastUpdated: string;
-}
-
-export interface GoogleTrendData {
-  keyword: string;
-  interest: number;
-  timeframe: string;
-  relatedTopics: { topic: string; value: number }[];
-  relatedQueries: { query: string; value: number }[];
+  impressions: number;
+  clicks: number;
+  engagement: number;
 }

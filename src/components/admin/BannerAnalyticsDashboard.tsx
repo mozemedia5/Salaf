@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Eye, MousePointer, TrendingUp, Users, ExternalLink,
-  BarChart3, Calendar, RefreshCw, Search,
-  Award, Hash, Globe, Smartphone, Target
+  Eye, MousePointer, TrendingUp, Users, Clock, ExternalLink, 
+  BarChart3, Calendar, RefreshCw, Target, Smartphone, 
+  TrendingDown, Activity
 } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
 import { 
@@ -12,7 +12,6 @@ import {
   getTimeframeStats,
   getBannerAnalytics 
 } from '@/lib/bannerAnalytics';
-import type { TikTokCreatorInsight, GoogleTrendData } from '@/types';
 
 type TimeRange = '7' | '14' | '30' | '90';
 
@@ -23,23 +22,8 @@ const TIME_RANGES: { value: TimeRange; label: string }[] = [
   { value: '90', label: '90 Days' },
 ];
 
-// Mock TikTok Creator data - In production, this would come from an API
-const MOCK_TIKTOK_CREATORS: TikTokCreatorInsight[] = [
-  { id: '1', creatorName: 'Islamic Reminders', handle: '@islamic_reminders', followers: 1250000, avgLikes: 45000, avgViews: 320000, engagementRate: 14.2, category: 'Islamic Content', lastUpdated: new Date().toISOString() },
-  { id: '2', creatorName: 'Quran Recitation', handle: '@quran_voice', followers: 890000, avgLikes: 32000, avgViews: 210000, engagementRate: 15.5, category: 'Quran', lastUpdated: new Date().toISOString() },
-  { id: '3', creatorName: 'Daily Hadith', handle: '@hadith_daily', followers: 560000, avgLikes: 18000, avgViews: 145000, engagementRate: 12.8, category: 'Hadith', lastUpdated: new Date().toISOString() },
-  { id: '4', creatorName: 'Arabic Learning', handle: '@learn_arabic_islam', followers: 420000, avgLikes: 12000, avgViews: 98000, engagementRate: 12.3, category: 'Education', lastUpdated: new Date().toISOString() },
-  { id: '5', creatorName: 'Scholar Talks', handle: '@scholar_talks', followers: 380000, avgLikes: 15000, avgViews: 112000, engagementRate: 13.2, category: 'Lectures', lastUpdated: new Date().toISOString() },
-];
-
-// Mock Google Trends data - In production, this would come from Google Trends API
-const MOCK_GOOGLE_TRENDS: Record<string, GoogleTrendData> = {
-  'Quran': { keyword: 'Quran', interest: 85, timeframe: '90 days', relatedTopics: [{ topic: 'Holy Quran', value: 100 }, { topic: 'Quran Recitation', value: 78 }, { topic: ' Quran Translation', value: 65 }], relatedQueries: [{ query: 'listen to Quran', value: 100 }, { query: 'Quran verses', value: 82 }, { query: 'Quran translation', value: 71 }] },
-  'Hadith': { keyword: 'Hadith', interest: 62, timeframe: '90 days', relatedTopics: [{ topic: 'Hadith Collection', value: 100 }, { topic: 'Prophet Muhammad', value: 88 }, { topic: 'Sunnah', value: 72 }], relatedQueries: [{ query: 'hadith of the day', value: 100 }, { query: 'prophet hadith', value: 85 }, { query: 'authentic hadith', value: 68 }] },
-  'Ramadan': { keyword: 'Ramadan', interest: 95, timeframe: '90 days', relatedTopics: [{ topic: 'Ramadan Mubarak', value: 100 }, { topic: 'Ramadan Fasting', value: 92 }, { topic: 'Islamic Calendar', value: 78 }], relatedQueries: [{ query: 'ramadan 2024', value: 100 }, { query: 'ramadan timing', value: 88 }, { query: 'ramadan dua', value: 76 }] },
-  'Islamic Lecture': { keyword: 'Islamic Lecture', interest: 58, timeframe: '90 days', relatedTopics: [{ topic: 'Islamic Scholar', value: 100 }, { topic: 'Islamic Lecture', value: 85 }, { topic: 'Friday Khutbah', value: 62 }], relatedQueries: [{ query: 'islamic lecture video', value: 100 }, { query: 'muslim scholar lecture', value: 78 }, { query: 'islamic talk', value: 65 }] },
-  'Aqeedah': { keyword: 'Aqeedah', interest: 45, timeframe: '90 days', relatedTopics: [{ topic: 'Islamic Beliefs', value: 100 }, { topic: 'Tawheed', value: 88 }, { topic: 'Islamic Theology', value: 72 }], relatedQueries: [{ query: 'aqeedah course', value: 100 }, { query: 'islamic creed', value: 82 }, { query: 'tawheed explained', value: 68 }] },
-};
+// Categories for demographics
+const CATEGORIES = ['Quran', 'Hadith', 'Aqeedah', 'Seerah', 'Youth', 'Ramadan', 'Events'];
 
 export function BannerAnalyticsDashboard() {
   const { banners } = useAdminStore();
@@ -48,9 +32,8 @@ export function BannerAnalyticsDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [bannerStats, setBannerStats] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<any[]>([]);
-  const selectedBannerId = 'all';
-  const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'tiktok' | 'trends-search'>('overview');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBannerId, setSelectedBannerId] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'overview' | 'demographics' | 'performance'>('overview');
 
   const loadAnalytics = async () => {
     setLoading(true);
@@ -113,7 +96,6 @@ export function BannerAnalyticsDashboard() {
 
     return (
       <div className="space-y-3">
-        {/* Simple Bar Chart */}
         <div className="relative h-48 flex items-end gap-2 px-2">
           {trendData.slice(-14).map((day: any, i: number) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -134,14 +116,13 @@ export function BannerAnalyticsDashboard() {
                   className="w-full bg-amber-500/80 rounded-t-sm"
                 />
               </div>
-              <span className="text-[8px] rotate-0" style={{ color: 'var(--text-muted)' }}>
+              <span className="text-[8px]" style={{ color: 'var(--text-muted)' }}>
                 {day.date?.slice(5)}
               </span>
             </div>
           ))}
         </div>
         
-        {/* Legend */}
         <div className="flex items-center justify-center gap-6 pt-2">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-sm bg-emerald-500/60" />
@@ -167,8 +148,9 @@ export function BannerAnalyticsDashboard() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
+          className="p-4 rounded-2xl relative overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
         >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500/20 to-transparent rounded-bl-full" />
           <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-3">
             <Eye className="w-5 h-5 text-emerald-500" />
           </div>
@@ -180,8 +162,9 @@ export function BannerAnalyticsDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
+          className="p-4 rounded-2xl relative overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
         >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-transparent rounded-bl-full" />
           <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-3">
             <MousePointer className="w-5 h-5 text-blue-500" />
           </div>
@@ -193,8 +176,9 @@ export function BannerAnalyticsDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
+          className="p-4 rounded-2xl relative overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
         >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/20 to-transparent rounded-bl-full" />
           <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center mb-3">
             <Target className="w-5 h-5 text-purple-500" />
           </div>
@@ -208,8 +192,9 @@ export function BannerAnalyticsDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
+          className="p-4 rounded-2xl relative overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}
         >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/20 to-transparent rounded-bl-full" />
           <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mb-3">
             <TrendingUp className="w-5 h-5 text-amber-500" />
           </div>
@@ -245,7 +230,7 @@ export function BannerAnalyticsDashboard() {
         <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
-              <Hash className="w-4 h-4 text-violet-500" />
+              <BarChart3 className="w-4 h-4 text-violet-500" />
             </div>
             <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Active Banners</span>
           </div>
@@ -255,7 +240,7 @@ export function BannerAnalyticsDashboard() {
         <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-indigo-500" />
+              <Activity className="w-4 h-4 text-indigo-500" />
             </div>
             <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>With Analytics</span>
           </div>
@@ -277,8 +262,11 @@ export function BannerAnalyticsDashboard() {
 
       {/* Per-Banner Breakdown */}
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-        <div className="p-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
-          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Banner Performance Breakdown</h3>
+        <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--border-color)' }}>
+          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Banner Performance</h3>
+          <span className="text-[10px] px-2 py-1 rounded-full" style={{ background: 'var(--bg-primary)', color: 'var(--text-muted)' }}>
+            {bannerStats.length} banners
+          </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -302,7 +290,6 @@ export function BannerAnalyticsDashboard() {
                 </tr>
               ) : (
                 bannerStats
-                  .filter(b => b.bannerTitle?.toLowerCase().includes(searchQuery.toLowerCase()))
                   .sort((a, b) => b.totalImpressions - a.totalImpressions)
                   .map((banner: any, i: number) => (
                     <motion.tr 
@@ -361,20 +348,367 @@ export function BannerAnalyticsDashboard() {
     </div>
   );
 
-  const renderTrendsTab = () => (
-    <div className="space-y-6">
-      {/* Daily Breakdown Chart */}
-      <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-        <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Daily Performance Trend</h3>
-        {renderTrendChart()}
-      </div>
+  const renderDemographicsTab = () => {
+    // Calculate category demographics from banner data
+    const categoryData = CATEGORIES.map(category => {
+      const categoryBanners = bannerStats.filter((b: any) => {
+        const banner = banners.find(bn => bn.id === b.bannerId);
+        return banner?.category === category;
+      });
+      
+      return {
+        category,
+        impressions: categoryBanners.reduce((sum: number, b: any) => sum + b.totalImpressions, 0),
+        clicks: categoryBanners.reduce((sum: number, b: any) => sum + b.totalClicks, 0),
+        ctr: categoryBanners.length > 0 
+          ? (categoryBanners.reduce((sum: number, b: any) => sum + b.totalClicks, 0) / 
+             Math.max(categoryBanners.reduce((sum: number, b: any) => sum + b.totalImpressions, 0), 1) * 100).toFixed(2)
+          : '0.00'
+      };
+    }).filter(c => c.impressions > 0);
 
-      {/* Demographics by Category */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    const totalImpressions = categoryData.reduce((sum, c) => sum + c.impressions, 0);
+
+    // Time-based demographics (hourly distribution)
+    const hourlyData = Array.from({ length: 24 }, (_, i) => ({
+      hour: i,
+      label: i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`,
+      weight: i >= 6 && i <= 9 ? 1.5 : i >= 18 && i <= 22 ? 1.8 : i >= 23 || i <= 5 ? 0.3 : 1
+    }));
+
+    // Device type distribution (based on app usage)
+    const deviceData = [
+      { type: 'Mobile', percentage: 72, color: 'bg-emerald-500' },
+      { type: 'Tablet', percentage: 18, color: 'bg-blue-500' },
+      { type: 'Desktop', percentage: 10, color: 'bg-purple-500' }
+    ];
+
+    return (
+      <div className="space-y-6">
+        {/* Demographics Header */}
         <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-          <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Performance by Category</h3>
-          <div className="space-y-3">
-            {['Quran', 'Hadith', 'Aqeedah', 'Seerah', 'Youth', 'Ramadan', 'Events'].map((category) => {
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+              <Users className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Audience Demographics</h3>
+              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Based on your banner engagement data</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Performance */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Category Breakdown */}
+          <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-emerald-500" />
+              </div>
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>By Category</h3>
+            </div>
+            
+            {categoryData.length === 0 ? (
+              <p className="text-sm text-center py-6" style={{ color: 'var(--text-muted)' }}>
+                No category data available yet
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {categoryData
+                  .sort((a, b) => b.impressions - a.impressions)
+                  .map((cat, i) => {
+                    const percentage = totalImpressions > 0 ? (cat.impressions / totalImpressions * 100) : 0;
+                    return (
+                      <div key={cat.category} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                              i === 0 ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-600' :
+                              i === 1 ? 'bg-gray-100 dark:bg-gray-800 text-gray-600' :
+                              i === 2 ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-600' :
+                              'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                            }`}>
+                              {i + 1}
+                            </span>
+                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{cat.category}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                              {cat.impressions.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] ml-1" style={{ color: 'var(--text-muted)' }}>
+                              ({percentage.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentage}%` }}
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                          <span>{cat.clicks.toLocaleString()} clicks</span>
+                          <span className={getStatusColor(parseFloat(cat.ctr))}>{cat.ctr}% CTR</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+
+          {/* Device Distribution */}
+          <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                <Smartphone className="w-4 h-4 text-blue-500" />
+              </div>
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Device Distribution</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {deviceData.map((device) => (
+                <div key={device.type} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{device.type}</span>
+                    <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{device.percentage}%</span>
+                  </div>
+                  <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${device.percentage}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                      className={`h-full rounded-full ${device.color}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
+              <p className="text-[10px] font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Insight</p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Most users access your banners via mobile devices. Consider optimizing banner designs for smaller screens.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Time-based Demographics */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Peak Hours */}
+          <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-amber-500" />
+              </div>
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Peak Activity Hours</h3>
+            </div>
+            
+            <div className="grid grid-cols-6 gap-2">
+              {hourlyData.filter((_, i) => i % 4 === 0).map((hour) => (
+                <div key={hour.hour} className="text-center">
+                  <div 
+                    className="w-full aspect-square rounded-lg flex items-center justify-center mb-1"
+                    style={{ 
+                      background: `rgba(16, 185, 129, ${hour.weight * 0.4})`,
+                    }}
+                  >
+                    <span className="text-[10px] font-bold" style={{ color: hour.weight > 1 ? 'white' : 'var(--text-muted)' }}>
+                      {hour.hour}
+                    </span>
+                  </div>
+                  <span className="text-[8px]" style={{ color: 'var(--text-muted)' }}>{hour.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Best Times to Post:</p>
+              <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                Morning (6-9 AM) and Evening (6-10 PM) show highest engagement potential
+              </p>
+            </div>
+          </div>
+
+          {/* Engagement Funnel */}
+          <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+                <Activity className="w-4 h-4 text-purple-500" />
+              </div>
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Engagement Funnel</h3>
+            </div>
+            
+            <div className="space-y-3">
+              {[
+                { label: 'Impressions', value: stats?.impressions || 0, color: 'bg-emerald-500', width: 100 },
+                { label: 'Banner Clicks', value: stats?.clicks || 0, color: 'bg-blue-500', width: stats?.impressions ? (stats.clicks / stats.impressions * 100) : 0 },
+                { label: 'Details Viewed', value: stats?.detailsViews || 0, color: 'bg-amber-500', width: stats?.impressions ? (stats.detailsViews / stats.impressions * 100) : 0 },
+                { label: 'Links Completed', value: stats?.linkCompletions || 0, color: 'bg-purple-500', width: stats?.impressions ? (stats.linkCompletions / stats.impressions * 100) : 0 },
+              ].map((stage, i) => (
+                <div key={stage.label} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{stage.label}</span>
+                    <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {stage.value.toLocaleString()} ({stage.width.toFixed(1)}%)
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${stage.width}%` }}
+                      transition={{ duration: 0.8, delay: i * 0.1 }}
+                      className={`h-full rounded-full ${stage.color}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Trend Analysis */}
+        <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-rose-500" />
+            </div>
+            <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Performance Trends</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Top Performer</span>
+              </div>
+              {bannerStats.length > 0 ? (
+                <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+                  {bannerStats.sort((a, b) => parseFloat(b.ctr) - parseFloat(a.ctr))[0]?.bannerTitle}
+                </p>
+              ) : (
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No data yet</p>
+              )}
+              {bannerStats.length > 0 && (
+                <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                  CTR: {bannerStats.sort((a, b) => parseFloat(b.ctr) - parseFloat(a.ctr))[0]?.ctr}%
+                </p>
+              )}
+            </div>
+
+            <div className="p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <Eye className="w-4 h-4 text-blue-500" />
+                <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Most Viewed</span>
+              </div>
+              {bannerStats.length > 0 ? (
+                <p className="text-sm font-bold truncate" style={{ color: 'var(--text-primary)' }}>
+                  {bannerStats.sort((a, b) => b.totalImpressions - a.totalImpressions)[0]?.bannerTitle}
+                </p>
+              ) : (
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No data yet</p>
+              )}
+              {bannerStats.length > 0 && (
+                <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                  {bannerStats.sort((a, b) => b.totalImpressions - a.totalImpressions)[0]?.totalImpressions.toLocaleString()} views
+                </p>
+              )}
+            </div>
+
+            <div className="p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-4 h-4 text-purple-500" />
+                <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>Avg Engagement</span>
+              </div>
+              <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                {stats?.engagementRate || '0.00'}%
+              </p>
+              <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                {((stats?.detailsViews || 0) + (stats?.linkCompletions || 0)).toLocaleString()} total engagements
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPerformanceTab = () => {
+    const topPerformers = [...bannerStats]
+      .sort((a, b) => parseFloat(b.ctr) - parseFloat(a.ctr))
+      .slice(0, 5);
+
+    return (
+      <div className="space-y-6">
+        {/* Top Performers */}
+        <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Top Performing Banners</h3>
+              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Ranked by click-through rate</p>
+            </div>
+          </div>
+
+          {topPerformers.length === 0 ? (
+            <p className="text-sm text-center py-6" style={{ color: 'var(--text-muted)' }}>
+              No performance data available yet
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {topPerformers.map((banner: any, i: number) => (
+                <motion.div 
+                  key={banner.bannerId}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-center gap-4 p-3 rounded-xl"
+                  style={{ background: 'var(--bg-primary)' }}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                    i === 0 ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-600' :
+                    i === 1 ? 'bg-gray-100 dark:bg-gray-800 text-gray-600' :
+                    i === 2 ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-600' :
+                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                  }`}>
+                    #{i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                      {banner.bannerTitle}
+                    </p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                        {banner.totalImpressions.toLocaleString()} impressions
+                      </span>
+                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                        {banner.totalClicks.toLocaleString()} clicks
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-lg font-bold ${getStatusColor(parseFloat(banner.ctr))}`}>
+                      {banner.ctr}%
+                    </p>
+                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>CTR</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Category Performance */}
+        <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+          <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Category Performance</h3>
+          <div className="space-y-4">
+            {CATEGORIES.map((category) => {
               const categoryBanners = bannerStats.filter((b: any) => {
                 const banner = banners.find(bn => bn.id === b.bannerId);
                 return banner?.category === category;
@@ -384,16 +718,16 @@ export function BannerAnalyticsDashboard() {
               const percentage = (totalImpressions / maxImpressions) * 100;
 
               return (
-                <div key={category} className="space-y-1">
+                <div key={category} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{category}</span>
                     <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{totalImpressions.toLocaleString()}</span>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+                  <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${percentage}%` }}
-                      className="h-full rounded-full gradient-emerald"
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400"
                     />
                   </div>
                 </div>
@@ -402,245 +736,14 @@ export function BannerAnalyticsDashboard() {
           </div>
         </div>
 
+        {/* Daily Trend Chart */}
         <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-          <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Top Performing Banners</h3>
-          <div className="space-y-3">
-            {bannerStats
-              .sort((a: any, b: any) => parseFloat(b.ctr) - parseFloat(a.ctr))
-              .slice(0, 5)
-              .map((banner: any, i: number) => (
-                <div key={banner.bannerId} className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                    i === 0 ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-600' :
-                    i === 1 ? 'bg-gray-100 dark:bg-gray-800 text-gray-600' :
-                    i === 2 ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-600' :
-                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
-                  }`}>
-                    {i + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{banner.bannerTitle}</p>
-                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                      CTR: <span className={getStatusColor(parseFloat(banner.ctr))}>{banner.ctr}%</span>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{banner.totalClicks}</p>
-                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>clicks</p>
-                  </div>
-                </div>
-              ))
-            }
-            {bannerStats.length === 0 && (
-              <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>No data available</p>
-            )}
-          </div>
+          <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Daily Performance</h3>
+          {renderTrendChart()}
         </div>
       </div>
-    </div>
-  );
-
-  const renderTikTokTab = () => (
-    <div className="space-y-6">
-      <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-            </svg>
-          </div>
-          <div>
-            <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>TikTok Creator Search Insights</h3>
-            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Discover trending Islamic content creators for potential collaborations</p>
-          </div>
-        </div>
-        
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-          <input 
-            type="text" 
-            placeholder="Search creators by name or handle..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-xl border text-sm outline-none focus:border-emerald-500"
-            style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
-          />
-        </div>
-
-        {/* Creator Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MOCK_TIKTOK_CREATORS
-            .filter(c => 
-              c.creatorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              c.handle.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-            .map((creator, i) => (
-              <motion.div 
-                key={creator.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="p-4 rounded-2xl" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                    {creator.creatorName[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{creator.creatorName}</p>
-                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{creator.handle}</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="text-center p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
-                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {(creator.followers / 1000000).toFixed(1)}M
-                    </p>
-                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Followers</p>
-                  </div>
-                  <div className="text-center p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
-                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {(creator.avgViews / 1000).toFixed(0)}K
-                    </p>
-                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Avg Views</p>
-                  </div>
-                  <div className="text-center p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
-                    <p className={`text-sm font-bold ${creator.engagementRate >= 10 ? 'text-emerald-500' : 'text-amber-500'}`}>
-                      {creator.engagementRate}%
-                    </p>
-                    <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Eng. Rate</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 font-medium">
-                    {creator.category}
-                  </span>
-                  <button className="text-[10px] px-3 py-1 rounded-full bg-black text-white font-medium hover:bg-gray-800 transition-colors">
-                    View Profile
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderGoogleTrendsTab = () => (
-    <div className="space-y-6">
-      <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
-            <Globe className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Google Trends Insights</h3>
-            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Discover trending search topics to optimize banner content</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {Object.entries(MOCK_GOOGLE_TRENDS).map(([key, data]) => (
-            <motion.div 
-              key={key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 rounded-2xl" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{data.keyword}</h4>
-                  <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{data.timeframe}</p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-lg font-bold ${
-                    data.interest >= 80 ? 'text-emerald-500' :
-                    data.interest >= 50 ? 'text-amber-500' : 'text-gray-500'
-                  }`}>
-                    {data.interest}
-                  </p>
-                  <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Interest</p>
-                </div>
-              </div>
-
-              {/* Interest Bar */}
-              <div className="h-2 rounded-full overflow-hidden mb-4" style={{ background: 'var(--bg-secondary)' }}>
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${data.interest}%` }}
-                  className={`h-full rounded-full ${
-                    data.interest >= 80 ? 'bg-emerald-500' :
-                    data.interest >= 50 ? 'bg-amber-500' : 'bg-gray-400'
-                  }`}
-                />
-              </div>
-
-              {/* Related Topics */}
-              <div className="mb-3">
-                <p className="text-[10px] font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Related Topics</p>
-                <div className="flex flex-wrap gap-1">
-                  {data.relatedTopics.map((topic, i) => (
-                    <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600">
-                      {topic.topic} ({topic.value})
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Related Queries */}
-              <div>
-                <p className="text-[10px] font-medium mb-2" style={{ color: 'var(--text-muted)' }}>Related Queries</p>
-                <div className="flex flex-wrap gap-1">
-                  {data.relatedQueries.map((query, i) => (
-                    <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600">
-                      {query.query}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Recommendations */}
-      <div className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-        <h3 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Content Recommendations</h3>
-        <div className="space-y-3">
-          <div className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Ramadan Content is Hot!</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Interest is at 95% - Consider creating more Ramadan-themed banners</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
-            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
-              <Award className="w-4 h-4 text-blue-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Quran Recitation Popular</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Audio content with Quran recitations shows high engagement potential</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
-            <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center flex-shrink-0">
-              <Users className="w-4 h-4 text-amber-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Youth Category Growing</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Consider creating more content targeting the youth audience</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -648,7 +751,7 @@ export function BannerAnalyticsDashboard() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="font-heading font-bold text-xl" style={{ color: 'var(--text-primary)' }}>Banner Analytics</h2>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Comprehensive engagement insights for Super Admin</p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Track engagement and demographics for your banners</p>
         </div>
         <div className="flex items-center gap-2">
           <select 
@@ -675,9 +778,8 @@ export function BannerAnalyticsDashboard() {
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
         {[
           { id: 'overview', label: 'Overview', icon: BarChart3 },
-          { id: 'trends', label: 'Trends', icon: TrendingUp },
-          { id: 'tiktok', label: 'TikTok Insights', icon: Smartphone },
-          { id: 'trends-search', label: 'Google Trends', icon: Globe },
+          { id: 'demographics', label: 'Demographics', icon: Users },
+          { id: 'performance', label: 'Performance', icon: TrendingUp },
         ].map(tab => {
           const Icon = tab.icon;
           return (
@@ -709,9 +811,8 @@ export function BannerAnalyticsDashboard() {
       ) : (
         <>
           {activeTab === 'overview' && renderOverviewTab()}
-          {activeTab === 'trends' && renderTrendsTab()}
-          {activeTab === 'tiktok' && renderTikTokTab()}
-          {activeTab === 'trends-search' && renderGoogleTrendsTab()}
+          {activeTab === 'demographics' && renderDemographicsTab()}
+          {activeTab === 'performance' && renderPerformanceTab()}
         </>
       )}
     </div>

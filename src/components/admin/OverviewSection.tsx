@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, FileText, MessageCircle, Users, Eye, Heart, Bell, LayoutPanelTop, ExternalLink, X, Image as ImageIcon, Video as VideoIcon, Sparkles } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Banner } from '@/types';
@@ -15,6 +16,7 @@ const statCards = [
 ];
 
 export function OverviewSection() {
+  const { isSuperAdmin } = useAdminAuth();
   const { videos, articles, questions, admins, setVideos, setArticles, setQuestions, setAdmins, setCampaigns, setNotifications } = useAdminStore();
   const [activeBanners, setActiveBanners] = useState<Banner[]>([]);
   const [exploreBanner, setExploreBanner] = useState<Banner | null>(null);
@@ -75,10 +77,12 @@ export function OverviewSection() {
       {/* Header */}
       <div>
         <h1 className="font-heading font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>
-          Dashboard Overview
+          {isSuperAdmin ? 'Supreme Admin Overview' : 'Creator Dashboard Overview'}
         </h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-          Welcome back! Here's what's happening.
+          {isSuperAdmin
+            ? 'Welcome back Supreme Admin! Here is the platform wide overview.'
+            : 'Welcome back Creator! Manage your content, track engagement, and inspire the community.'}
         </p>
       </div>
 

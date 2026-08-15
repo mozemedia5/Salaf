@@ -132,40 +132,42 @@ export function OverviewSection() {
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No active dashboard banners currently published.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x-mandatory py-2">
             {activeBanners.map((banner) => (
               <motion.div
                 key={banner.id}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   trackBannerClick(banner.id, banner.title);
                   trackBannerDetailsView(banner.id, banner.title);
                   setExploreBanner(banner);
                 }}
-                className="rounded-2xl border p-4 shadow-sm cursor-pointer transition-all hover:shadow-md flex flex-col justify-between relative overflow-hidden group"
+                className="w-[280px] sm:w-[320px] flex-shrink-0 snap-start rounded-2xl border p-4 shadow-sm cursor-pointer transition-all hover:shadow-md flex flex-col justify-between relative overflow-hidden group"
                 style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
               >
-                <div className="relative aspect-[16/7] w-full rounded-xl overflow-hidden mb-3 bg-gray-100 dark:bg-gray-800">
-                  <img
-                    src={banner.imageURL || (banner as any).bannerImageUrl}
-                    alt={banner.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider">
-                    {banner.category}
-                  </div>
-                </div>
-
                 <div>
-                  <h3 className="font-heading font-bold text-sm line-clamp-1" style={{ color: 'var(--text-primary)' }}>
-                    {banner.title}
-                  </h3>
-                  {banner.description && (
-                    <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-muted)' }}>
-                      {banner.description}
-                    </p>
-                  )}
+                  <div className="relative aspect-[16/7] w-full rounded-xl overflow-hidden mb-3 bg-gray-100 dark:bg-gray-800">
+                    <img
+                      src={banner.imageURL || (banner as any).bannerImageUrl}
+                      alt={banner.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider">
+                      {banner.category}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-heading font-bold text-sm line-clamp-1" style={{ color: 'var(--text-primary)' }}>
+                      {banner.title}
+                    </h3>
+                    {banner.description && (
+                      <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-muted)' }}>
+                        {banner.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between mt-3 pt-2.5 border-t" style={{ borderColor: 'var(--border-color)' }}>

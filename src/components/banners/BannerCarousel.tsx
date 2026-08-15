@@ -196,23 +196,27 @@ export function BannerCarousel() {
         </div>
       </div>
 
-      {/* Standalone Airtel-Style Separate Cards Grid for Active Banners */}
+      {/* Horizontal Slider Row for Active Banners (Each banner moves by its own horizontally) */}
       {banners.length > 1 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 px-1">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-              More Highlights
-            </span>
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                Horizontal Banner Collection
+              </span>
+            </div>
+            <span className="text-[10px] text-emerald-500 font-semibold">Slide horizontally &rarr;</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {banners.slice(0, 4).map((banner) => (
+
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x-mandatory py-1">
+            {banners.map((banner) => (
               <motion.div
                 key={banner.id}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => openExploreModal(banner)}
-                className="p-3.5 rounded-2xl border shadow-sm cursor-pointer transition-all hover:shadow-md flex items-center gap-3"
+                className="w-[240px] sm:w-[280px] flex-shrink-0 snap-start p-3.5 rounded-2xl border shadow-sm cursor-pointer transition-all hover:shadow-md flex items-center gap-3"
                 style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
               >
                 <img

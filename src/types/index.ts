@@ -141,6 +141,8 @@ export interface Banner {
   isActive?: boolean;
   mediaImages?: BannerMediaImage[];
   mediaVideos?: BannerMediaVideo[];
+  averageRating?: number;
+  ratingsCount?: number;
 }
 
 export interface UserQuestion {
@@ -208,7 +210,7 @@ export interface SavedVideo {
 
 export type TabId = 'home' | 'videos' | 'audio' | 'donate' | 'profile';
 
-export type ViewId = TabId | 'articles' | 'gallery' | 'search' | 'notifications' | 'article-detail' | 'video-player' | 'audio-player' | 'privacy-policy' | 'terms-of-service' | 'admin-dashboard' | 'user-questions';
+export type ViewId = TabId | 'explore' | 'articles' | 'gallery' | 'search' | 'notifications' | 'article-detail' | 'video-player' | 'audio-player' | 'privacy-policy' | 'terms-of-service' | 'admin-dashboard' | 'user-questions';
 
 export type AdminSection = 'overview' | 'videos' | 'audio' | 'articles' | 'gallery' | 'donations' | 'banners' | 'questions' | 'admins' | 'notifications' | 'analytics';
 

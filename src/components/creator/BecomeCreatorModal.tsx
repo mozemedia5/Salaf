@@ -23,6 +23,7 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [existingRequest, setExistingRequest] = useState<any>(null);
   const [loadingCheck, setLoadingCheck] = useState(true);
 
@@ -68,7 +69,16 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
   };
 
   const handleSubmit = async () => {
-    if (!user || selectedTypes.length === 0) return;
+    setSubmitError(null);
+    if (!user) {
+      setSubmitError('Please sign in to submit a creator request.');
+      return;
+    }
+    if (selectedTypes.length === 0) {
+      setSubmitError('Please select at least one content type you intend to create.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const requestData = {
@@ -87,9 +97,9 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
         ...requestData,
         createdAt: new Date().toISOString(),
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error submitting creator request:', err);
-      alert('Failed to submit request. Please try again.');
+      setSubmitError(err?.message || 'Failed to submit request. Please check your network connection or try again.');
     } finally {
       setSubmitting(false);
     }
@@ -261,6 +271,12 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
                 style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
               />
             </div>
+
+            {submitError && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 text-xs font-medium">
+                {submitError}
+              </div>
+            )}
 
             {/* Submit Button */}
             <button

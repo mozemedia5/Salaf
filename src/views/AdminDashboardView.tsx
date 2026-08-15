@@ -111,7 +111,7 @@ export function AdminDashboardView() {
         <img src="/icons/icon-192x192.png" alt="Salaf" className="h-9 w-9 rounded-lg shadow-sm" />
         <div>
           <p className="font-heading font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-            {isSuperAdmin ? 'Admin Dashboard' : 'Creator Dashboard'}
+            {isSuperAdmin ? 'Supreme Admin Dashboard' : 'Creator Dashboard'}
           </p>
           <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
             {isSuperAdmin ? 'Supreme Admin' : 'Creator'} · {adminProfile?.displayName || adminProfile?.email}
@@ -206,7 +206,7 @@ export function AdminDashboardView() {
             <Menu className="w-5 h-5" style={{ color: 'var(--text-primary)' }} />
           </button>
           <span className="font-heading font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-            {SECTIONS.find((s) => s.id === currentSection)?.label || 'Admin'}
+            {SECTIONS.find((s) => s.id === currentSection)?.label || (isSuperAdmin ? 'Supreme Admin' : 'Creator')}
           </span>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-6 pb-24 md:pb-6">

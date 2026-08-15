@@ -100,6 +100,19 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
     
+    // Creator requests - users can read/create their own, admins can read/update all
+    match /creator_requests/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Banner Analytics - anyone can read and write analytics events
+    match /bannerAnalytics/{analyticsId} {
+      allow read, write: if true;
+    }
+
     // Admin invites - super admin manages; an authenticated user may read the
     // invite that matches their own email so they can self-link on first login.
     match /admin_invites/{email} {

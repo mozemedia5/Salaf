@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, Search, X, Megaphone, ExternalLink, MoreVertical, Calendar, BarChart3, Eye, MousePointer } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Megaphone, ExternalLink, MoreVertical, Calendar, BarChart3, Eye, MousePointer, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc, orderBy, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Banner } from '@/types';
+import type { Banner, BannerMediaImage, BannerMediaVideo } from '@/types';
 
 const CATEGORIES = ['Quran', 'Hadith', 'Aqeedah', 'Seerah', 'Youth', 'Ramadan', 'Events'];
 
@@ -25,6 +26,7 @@ export function BannerManagement() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+  const { user: currentUser } = useAdminAuth();
   const [formData, setFormData] = useState({ 
     title: '', 
     imageURL: '', 
@@ -33,8 +35,12 @@ export function BannerManagement() {
     description: '', 
     details: '', 
     isActive: true,
-    expirationDays: 30
+    expirationDays: 30,
+    mediaImages: [] as BannerMediaImage[],
+    mediaVideos: [] as BannerMediaVideo[]
   });
+  const [newImage, setNewImage] = useState({ url: '', description: '' });
+  const [newVideo, setNewVideo] = useState({ title: '', videoURL: '' });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [bannerStats, setBannerStats] = useState<Record<string, BannerStats>>({});
@@ -130,6 +136,17 @@ export function BannerManagement() {
         await updateDoc(doc(db, 'banners', editingBanner.id), data);
       } else {
         await addDoc(collection(db, 'banners'), data);
+
+        // Dispatch notification to all users (except supreme admin creator)
+        await addDoc(collection(db, 'notifications'), {
+          title: `📢 New Banner: ${formData.title}`,
+          body: formData.description || formData.details || 'Check out our new update in the application!',
+          type: 'announcement',
+          link: formData.link || 'admin-dashboard',
+          isRead: false,
+          createdAt: serverTimestamp(),
+          createdBy: currentUser?.uid,
+        });
       }
       setShowModal(false);
       setEditingBanner(null);
@@ -141,7 +158,9 @@ export function BannerManagement() {
         description: '', 
         details: '', 
         isActive: true,
-        expirationDays: 30
+        expirationDays: 30,
+        mediaImages: [],
+        mediaVideos: []
       });
     } catch (err) {
       console.error(err);
@@ -157,16 +176,17 @@ export function BannerManagement() {
 
   const openEdit = (banner: Banner) => {
     setEditingBanner(banner);
-    // Try to estimate remaining days or just default to 30
     setFormData({
       title: banner.title || '', 
-      imageURL: banner.imageURL || '', 
+      imageURL: banner.imageURL || (banner as any).bannerImageUrl || '',
       category: banner.category || 'Quran',
       link: banner.link || '', 
       description: banner.description || '', 
       details: banner.details || '', 
       isActive: banner.isActive !== false,
-      expirationDays: 30
+      expirationDays: 30,
+      mediaImages: banner.mediaImages || [],
+      mediaVideos: banner.mediaVideos || []
     });
     setShowModal(true);
   };
@@ -196,7 +216,7 @@ export function BannerManagement() {
             <BarChart3 className="w-4 h-4 text-blue-500" />
             View Full Analytics
           </button>
-          <button onClick={() => { setEditingBanner(null); setFormData({ title: '', imageURL: '', category: 'Quran', link: '', description: '', details: '', isActive: true, expirationDays: 30 }); setShowModal(true); }}
+          <button onClick={() => { setEditingBanner(null); setFormData({ title: '', imageURL: '', category: 'Quran', link: '', description: '', details: '', isActive: true, expirationDays: 30, mediaImages: [], mediaVideos: [] }); setShowModal(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-emerald text-white text-sm font-semibold shadow-glow">
             <Plus className="w-4 h-4" /> Add Banner
           </button>
@@ -344,7 +364,101 @@ export function BannerManagement() {
                   className="w-full px-4 py-3 rounded-xl border text-sm outline-none focus:border-emerald-500 resize-none"
                   style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
               </div>
-              <label className="flex items-center gap-2 cursor-pointer">
+
+              {/* Media Images Collection */}
+              <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                  <ImageIcon className="w-4 h-4 text-emerald-500" /> Attached Images with Descriptions
+                </label>
+                {formData.mediaImages.map((img, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <img src={img.url} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+                      <span className="truncate" style={{ color: 'var(--text-primary)' }}>{img.description || 'No description'}</span>
+                    </div>
+                    <button type="button" onClick={() => setFormData({ ...formData, mediaImages: formData.mediaImages.filter((_, i) => i !== idx) })} className="p-1 hover:bg-red-50 text-red-500 rounded">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <div className="space-y-2 p-3 rounded-xl border" style={{ borderColor: 'var(--border-color)', background: 'var(--bg-primary)' }}>
+                  <ImageUploadField
+                    folder="salaf/banner_media"
+                    uploadPreset="salaf_banners"
+                    label="Add Gallery Image"
+                    currentImageUrl={newImage.url}
+                    onUploaded={(url) => setNewImage({ ...newImage, url })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Image description..."
+                    value={newImage.description}
+                    onChange={(e) => setNewImage({ ...newImage, description: e.target.value })}
+                    className="w-full h-9 px-3 rounded-lg border text-xs outline-none focus:border-emerald-500"
+                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                  <button
+                    type="button"
+                    disabled={!newImage.url}
+                    onClick={() => {
+                      setFormData({ ...formData, mediaImages: [...formData.mediaImages, newImage] });
+                      setNewImage({ url: '', description: '' });
+                    }}
+                    className="w-full py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold disabled:opacity-50"
+                  >
+                    + Add Image
+                  </button>
+                </div>
+              </div>
+
+              {/* Media Videos Collection */}
+              <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                  <VideoIcon className="w-4 h-4 text-blue-500" /> Attached Video Links
+                </label>
+                {formData.mediaVideos.map((vid, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 text-xs">
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{vid.title}</p>
+                      <p className="text-[10px] truncate text-blue-500">{vid.videoURL}</p>
+                    </div>
+                    <button type="button" onClick={() => setFormData({ ...formData, mediaVideos: formData.mediaVideos.filter((_, i) => i !== idx) })} className="p-1 hover:bg-red-50 text-red-500 rounded">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <div className="space-y-2 p-3 rounded-xl border" style={{ borderColor: 'var(--border-color)', background: 'var(--bg-primary)' }}>
+                  <input
+                    type="text"
+                    placeholder="Video title..."
+                    value={newVideo.title}
+                    onChange={(e) => setNewVideo({ ...newVideo, title: e.target.value })}
+                    className="w-full h-9 px-3 rounded-lg border text-xs outline-none focus:border-emerald-500"
+                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Video URL (YouTube / Cloudinary video)..."
+                    value={newVideo.videoURL}
+                    onChange={(e) => setNewVideo({ ...newVideo, videoURL: e.target.value })}
+                    className="w-full h-9 px-3 rounded-lg border text-xs outline-none focus:border-emerald-500"
+                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                  <button
+                    type="button"
+                    disabled={!newVideo.title || !newVideo.videoURL}
+                    onClick={() => {
+                      setFormData({ ...formData, mediaVideos: [...formData.mediaVideos, newVideo] });
+                      setNewVideo({ title: '', videoURL: '' });
+                    }}
+                    className="w-full py-1.5 rounded-lg bg-blue-500 text-white text-xs font-semibold disabled:opacity-50"
+                  >
+                    + Add Video Link
+                  </button>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-2">
                 <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="w-4 h-4 rounded accent-emerald-500" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Active</span>
               </label>

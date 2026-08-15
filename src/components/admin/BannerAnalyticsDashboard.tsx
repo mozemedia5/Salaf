@@ -5,6 +5,7 @@ import {
   BarChart3, Calendar, RefreshCw, Target, Smartphone, 
   Activity
 } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
 import { useAdminStore } from '@/stores/adminStore';
 import { 
   getAllBannerAnalytics, 
@@ -85,56 +86,78 @@ export function BannerAnalyticsDashboard() {
     if (trendData.length === 0) {
       return (
         <div className="h-64 flex items-center justify-center rounded-xl" style={{ background: 'var(--bg-primary)' }}>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No data available for the selected period</p>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No analytics data available for the selected period</p>
         </div>
       );
     }
 
-    const maxValue = Math.max(
-      ...trendData.map(d => Math.max(d.impressions || 0, d.clicks || 0, d.detailsViews || 0))
-    );
+    const chartData = trendData.map(d => ({
+      date: d.date ? d.date.slice(5) : '',
+      impressions: d.impressions || 0,
+      clicks: d.clicks || 0,
+      detailsViews: d.detailsViews || 0,
+      ctr: d.impressions > 0 ? Number(((d.clicks / d.impressions) * 100).toFixed(2)) : 0
+    }));
 
     return (
-      <div className="space-y-3">
-        <div className="relative h-48 flex items-end gap-2 px-2">
-          {trendData.slice(-14).map((day: any, i: number) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <div className="w-full flex flex-col-reverse gap-0.5" style={{ height: '180px' }}>
-                <motion.div 
-                  initial={{ height: 0 }}
-                  animate={{ height: `${maxValue > 0 ? (day.impressions / maxValue) * 100 : 0}%` }}
-                  className="w-full bg-emerald-500/60 rounded-t-sm"
-                />
-                <motion.div 
-                  initial={{ height: 0 }}
-                  animate={{ height: `${maxValue > 0 ? (day.clicks / maxValue) * 100 : 0}%` }}
-                  className="w-full bg-blue-500/80 rounded-t-sm"
-                />
-                <motion.div 
-                  initial={{ height: 0 }}
-                  animate={{ height: `${maxValue > 0 ? (day.detailsViews / maxValue) * 100 : 0}%` }}
-                  className="w-full bg-amber-500/80 rounded-t-sm"
-                />
-              </div>
-              <span className="text-[8px]" style={{ color: 'var(--text-muted)' }}>
-                {day.date?.slice(5)}
-              </span>
-            </div>
-          ))}
+      <div className="space-y-4">
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorImpressions" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                </linearGradient>
+                <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0}/>
+                </linearGradient>
+                <linearGradient id="colorDetails" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+              <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderColor: 'var(--border-color)',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  color: 'var(--text-primary)'
+                }}
+              />
+              <Area type="monotone" dataKey="impressions" name="Impressions" stroke="#10b981" fillOpacity={1} fill="url(#colorImpressions)" strokeWidth={2} />
+              <Area type="monotone" dataKey="clicks" name="Clicks" stroke="#3b82f6" fillOpacity={1} fill="url(#colorClicks)" strokeWidth={2} />
+              <Area type="monotone" dataKey="detailsViews" name="Details Views" stroke="#f59e0b" fillOpacity={1} fill="url(#colorDetails)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
         
-        <div className="flex items-center justify-center gap-6 pt-2">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm bg-emerald-500/60" />
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Impressions</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm bg-blue-500/80" />
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Clicks</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm bg-amber-500/80" />
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Details Views</span>
+        {/* CTR Rising & Falling Line Chart */}
+        <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>CTR Trend (%)</p>
+          <div className="h-40 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} unit="%" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--bg-secondary)',
+                    borderColor: 'var(--border-color)',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    color: 'var(--text-primary)'
+                  }}
+                />
+                <Line type="monotone" dataKey="ctr" name="Click-Through Rate" stroke="#8b5cf6" strokeWidth={2.5} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

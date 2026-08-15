@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, Search, X, Megaphone, ExternalLink, MoreVertical, Calendar, BarChart3, Eye, MousePointer } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Megaphone, ExternalLink, Calendar, BarChart3, Eye, MousePointer, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
+import { ThumbnailPicker } from '@/components/ui-custom/ThumbnailPicker';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc, orderBy, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Banner } from '@/types';
+import type { Banner, BannerMediaImage, BannerMediaVideo } from '@/types';
 
 const CATEGORIES = ['Quran', 'Hadith', 'Aqeedah', 'Seerah', 'Youth', 'Ramadan', 'Events'];
 
@@ -20,10 +22,9 @@ interface BannerStats {
 
 export function BannerManagement() {
   const { banners, setBanners, setSection } = useAdminStore();
+  const { isSuperAdmin, user: currentUser } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [formData, setFormData] = useState({ 
     title: '', 
@@ -33,8 +34,12 @@ export function BannerManagement() {
     description: '', 
     details: '', 
     isActive: true,
-    expirationDays: 30
+    expirationDays: 30,
+    mediaImages: [] as BannerMediaImage[],
+    mediaVideos: [] as BannerMediaVideo[]
   });
+  const [newImageObj, setNewImageObj] = useState<BannerMediaImage>({ url: '', description: '' });
+  const [newVideoObj, setNewVideoObj] = useState<BannerMediaVideo>({ url: '', title: '' });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [bannerStats, setBannerStats] = useState<Record<string, BannerStats>>({});
@@ -123,13 +128,29 @@ export function BannerManagement() {
         bannerImageUrl: formData.imageURL,
         expiresAt,
         updatedAt: serverTimestamp(), 
+        createdBy: editingBanner?.createdBy || currentUser?.uid,
         createdAt: editingBanner ? undefined : serverTimestamp() 
       };
 
+      let bannerRefId = editingBanner?.id;
       if (editingBanner) {
         await updateDoc(doc(db, 'banners', editingBanner.id), data);
       } else {
-        await addDoc(collection(db, 'banners'), data);
+        const added = await addDoc(collection(db, 'banners'), data);
+        bannerRefId = added.id;
+
+        // Dispatch broadcast notification to all users for new banner creation
+        await addDoc(collection(db, 'notifications'), {
+          title: `📢 New Banner: ${formData.title}`,
+          body: formData.description || formData.title,
+          type: 'announcement',
+          link: formData.link || 'home',
+          imageURL: formData.imageURL,
+          bannerId: bannerRefId,
+          isRead: false,
+          createdAt: serverTimestamp(),
+          createdBy: currentUser?.uid,
+        });
       }
       setShowModal(false);
       setEditingBanner(null);
@@ -141,7 +162,9 @@ export function BannerManagement() {
         description: '', 
         details: '', 
         isActive: true,
-        expirationDays: 30
+        expirationDays: 30,
+        mediaImages: [],
+        mediaVideos: []
       });
     } catch (err) {
       console.error(err);
@@ -157,7 +180,6 @@ export function BannerManagement() {
 
   const openEdit = (banner: Banner) => {
     setEditingBanner(banner);
-    // Try to estimate remaining days or just default to 30
     setFormData({
       title: banner.title || '', 
       imageURL: banner.imageURL || '', 
@@ -166,7 +188,9 @@ export function BannerManagement() {
       description: banner.description || '', 
       details: banner.details || '', 
       isActive: banner.isActive !== false,
-      expirationDays: 30
+      expirationDays: 30,
+      mediaImages: banner.mediaImages || [],
+      mediaVideos: banner.mediaVideos || []
     });
     setShowModal(true);
   };
@@ -185,18 +209,20 @@ export function BannerManagement() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="font-heading font-bold text-xl" style={{ color: 'var(--text-primary)' }}>Banner Management</h2>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{filtered.length} banners &middot; Super Admin only</p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{filtered.length} banners &middot; Airtel Card Style View</p>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setSection('analytics')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/10"
-            style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
-          >
-            <BarChart3 className="w-4 h-4 text-blue-500" />
-            View Full Analytics
-          </button>
-          <button onClick={() => { setEditingBanner(null); setFormData({ title: '', imageURL: '', category: 'Quran', link: '', description: '', details: '', isActive: true, expirationDays: 30 }); setShowModal(true); }}
+          {isSuperAdmin && (
+            <button
+              onClick={() => setSection('analytics')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/10"
+              style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+            >
+              <BarChart3 className="w-4 h-4 text-blue-500" />
+              Full Analytics
+            </button>
+          )}
+          <button onClick={() => { setEditingBanner(null); setFormData({ title: '', imageURL: '', category: 'Quran', link: '', description: '', details: '', isActive: true, expirationDays: 30, mediaImages: [], mediaVideos: [] }); setShowModal(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-emerald text-white text-sm font-semibold shadow-glow">
             <Plus className="w-4 h-4" /> Add Banner
           </button>
@@ -210,66 +236,97 @@ export function BannerManagement() {
           style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
       </div>
 
-      <div className="space-y-3">
+      {/* Airtel-app style separate card divs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filtered.map((banner, i) => {
           const stats = bannerStats[banner.id];
+          const isOwner = isSuperAdmin || banner.createdBy === currentUser?.uid;
+
           return (
-            <motion.div key={banner.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-              className="p-4 rounded-2xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-              <div className="flex items-start gap-4">
-                <div className="w-24 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-800">
-                  {banner.imageURL ? <img src={banner.imageURL} alt="" className="w-full h-full object-cover" /> : <Megaphone className="w-6 h-6 m-4 text-gray-400" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{banner.title}</h3>
-                      {getStatusBadge(banner)}
+            <motion.div
+              key={banner.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className="rounded-3xl overflow-hidden shadow-sm border flex flex-col justify-between"
+              style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
+            >
+              <div>
+                {/* Banner Media Card Header */}
+                <div className="relative w-full aspect-[16/8] overflow-hidden bg-gray-100 dark:bg-gray-800">
+                  {banner.imageURL ? (
+                    <img src={banner.imageURL} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Megaphone className="w-8 h-8 text-gray-400" />
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => { setSelectedBanner(banner); setShowDetailsModal(true); }} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Details">
-                        <MoreVertical className="w-3.5 h-3.5 text-blue-500" />
-                      </button>
-                      <button onClick={() => openEdit(banner)} className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20"><Pencil className="w-3.5 h-3.5 text-emerald-500" /></button>
-                      <button onClick={() => handleDelete(banner.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
-                    </div>
+                  )}
+                  <div className="absolute top-3 right-3 flex items-center gap-2">
+                    {getStatusBadge(banner)}
                   </div>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-[10px] text-emerald-600 font-medium">{banner.category}</span>
+                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider">
+                    {banner.category}
+                  </div>
+                </div>
+
+                {/* Content Section */}
+                <div className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-heading font-bold text-base line-clamp-1" style={{ color: 'var(--text-primary)' }}>
+                      {banner.title}
+                    </h3>
+                    {isOwner && (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button onClick={() => openEdit(banner)} className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                          <Pencil className="w-3.5 h-3.5 text-emerald-500" />
+                        </button>
+                        <button onClick={() => handleDelete(banner.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {banner.description && (
+                    <p className="text-xs line-clamp-2" style={{ color: 'var(--text-muted)' }}>{banner.description}</p>
+                  )}
+
+                  {/* Attached Media Counters */}
+                  <div className="flex items-center gap-3 pt-1">
+                    {banner.mediaImages && banner.mediaImages.length > 0 && (
+                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 font-medium">
+                        <ImageIcon className="w-3 h-3" /> {banner.mediaImages.length} Images
+                      </span>
+                    )}
+                    {banner.mediaVideos && banner.mediaVideos.length > 0 && (
+                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 font-medium">
+                        <VideoIcon className="w-3 h-3" /> {banner.mediaVideos.length} Videos
+                      </span>
+                    )}
                     {banner.expiresAt && (
-                      <span className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                        <Calendar className="w-3 h-3" /> Expires: {new Date(banner.expiresAt).toLocaleDateString()}
+                      <span className="flex items-center gap-1 text-[10px] ml-auto" style={{ color: 'var(--text-muted)' }}>
+                        <Calendar className="w-3 h-3" /> {new Date(banner.expiresAt).toLocaleDateString()}
                       </span>
                     )}
                   </div>
-                  {banner.description && <p className="text-xs mt-1 line-clamp-1" style={{ color: 'var(--text-muted)' }}>{banner.description}</p>}
-                  
-                  {/* Analytics Stats */}
-                  {stats && (
-                    <div className="flex items-center gap-4 mt-2 pt-2" style={{ borderTop: '1px dashed var(--border-color)' }}>
-                      <div className="flex items-center gap-1.5">
-                        <Eye className="w-3 h-3 text-blue-500" />
-                        <span className="text-[10px] font-medium" style={{ color: 'var(--text-primary)' }}>
-                          {stats.totalImpressions.toLocaleString()}
-                        </span>
-                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>views</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <MousePointer className="w-3 h-3 text-emerald-500" />
-                        <span className="text-[10px] font-medium" style={{ color: 'var(--text-primary)' }}>
-                          {stats.totalClicks.toLocaleString()}
-                        </span>
-                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>clicks</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] font-medium ${parseFloat(stats.ctr) >= 5 ? 'text-emerald-500' : parseFloat(stats.ctr) >= 2 ? 'text-amber-500' : 'text-gray-500'}`}>
-                          {stats.ctr}%
-                        </span>
-                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>CTR</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
+              </div>
+
+              {/* Analytics Footer Bar */}
+              <div className="px-4 py-3 border-t flex items-center justify-between" style={{ borderColor: 'var(--border-color)', background: 'var(--bg-primary)' }}>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="flex items-center gap-1 font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    <Eye className="w-3.5 h-3.5 text-blue-500" /> {stats?.totalImpressions || 0}
+                  </span>
+                  <span className="flex items-center gap-1 font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    <MousePointer className="w-3.5 h-3.5 text-emerald-500" /> {stats?.totalClicks || 0}
+                  </span>
+                </div>
+                {banner.link && (
+                  <a href={banner.link} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-500 hover:underline flex items-center gap-1">
+                    <ExternalLink className="w-3 h-3" /> Link
+                  </a>
+                )}
               </div>
             </motion.div>
           );
@@ -340,10 +397,102 @@ export function BannerManagement() {
               </div>
               <div>
                 <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-muted)' }}>Detailed Info</label>
-                <textarea value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} placeholder="Full content shown when ... is tapped" rows={3}
+                <textarea value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} placeholder="Full content shown when tapped" rows={3}
                   className="w-full px-4 py-3 rounded-xl border text-sm outline-none focus:border-emerald-500 resize-none"
                   style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
               </div>
+
+              {/* Attach Images Section */}
+              <div className="p-3 rounded-2xl border space-y-3" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+                <label className="text-xs font-bold block" style={{ color: 'var(--text-primary)' }}>
+                  Attached Extra Images ({formData.mediaImages.length})
+                </label>
+                {formData.mediaImages.map((img, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-gray-50 dark:bg-gray-800">
+                    <img src={img.url} alt="" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                    <span className="text-xs flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{img.description || 'No description'}</span>
+                    <button onClick={() => setFormData({ ...formData, mediaImages: formData.mediaImages.filter((_, i) => i !== idx) })}>
+                      <X className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+                <div className="space-y-2">
+                  <ImageUploadField
+                    folder="salaf/banners"
+                    uploadPreset="salaf_banners"
+                    label="Upload Additional Image"
+                    currentImageUrl={newImageObj.url}
+                    onUploaded={(url) => setNewImageObj({ ...newImageObj, url })}
+                  />
+                  <input
+                    type="text"
+                    value={newImageObj.description}
+                    onChange={(e) => setNewImageObj({ ...newImageObj, description: e.target.value })}
+                    placeholder="Image description..."
+                    className="w-full h-9 px-3 rounded-lg border text-xs outline-none focus:border-emerald-500"
+                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newImageObj.url) {
+                        setFormData({ ...formData, mediaImages: [...formData.mediaImages, newImageObj] });
+                        setNewImageObj({ url: '', description: '' });
+                      }
+                    }}
+                    disabled={!newImageObj.url}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-600 text-xs font-semibold disabled:opacity-50"
+                  >
+                    Add Image to Banner
+                  </button>
+                </div>
+              </div>
+
+              {/* Attach Videos Section */}
+              <div className="p-3 rounded-2xl border space-y-3" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+                <label className="text-xs font-bold block" style={{ color: 'var(--text-primary)' }}>
+                  Attached Videos ({formData.mediaVideos.length})
+                </label>
+                {formData.mediaVideos.map((vid, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-gray-50 dark:bg-gray-800">
+                    <VideoIcon className="w-5 h-5 text-purple-500 flex-shrink-0" />
+                    <span className="text-xs flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{vid.title || vid.url}</span>
+                    <button onClick={() => setFormData({ ...formData, mediaVideos: formData.mediaVideos.filter((_, i) => i !== idx) })}>
+                      <X className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+                <div className="space-y-2">
+                  <ThumbnailPicker
+                    value={newVideoObj.url}
+                    onChange={(url) => setNewVideoObj({ ...newVideoObj, url })}
+                    label="Choose / Upload Video"
+                    type="video"
+                  />
+                  <input
+                    type="text"
+                    value={newVideoObj.title}
+                    onChange={(e) => setNewVideoObj({ ...newVideoObj, title: e.target.value })}
+                    placeholder="Video title..."
+                    className="w-full h-9 px-3 rounded-lg border text-xs outline-none focus:border-emerald-500"
+                    style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newVideoObj.url) {
+                        setFormData({ ...formData, mediaVideos: [...formData.mediaVideos, newVideoObj] });
+                        setNewVideoObj({ url: '', title: '' });
+                      }
+                    }}
+                    disabled={!newVideoObj.url}
+                    className="px-3 py-1.5 rounded-lg bg-purple-100 text-purple-600 text-xs font-semibold disabled:opacity-50"
+                  >
+                    Add Video to Banner
+                  </button>
+                </div>
+              </div>
+
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="w-4 h-4 rounded accent-emerald-500" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Active</span>
@@ -357,41 +506,6 @@ export function BannerManagement() {
         </motion.div>
       )}
 
-      {/* Details Modal */}
-      {showDetailsModal && selectedBanner && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50" onClick={() => setShowDetailsModal(false)}>
-          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[400px] rounded-3xl p-6" style={{ background: 'var(--bg-secondary)', boxShadow: 'var(--shadow-lg)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading font-bold" style={{ color: 'var(--text-primary)' }}>Banner Details</h3>
-              <button onClick={() => setShowDetailsModal(false)} className="p-1"><X className="w-5 h-5" style={{ color: 'var(--text-muted)' }} /></button>
-            </div>
-            {selectedBanner.imageURL && <img src={selectedBanner.imageURL} alt="" className="w-full h-40 object-cover rounded-xl mb-4" />}
-            <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{selectedBanner.title}</h4>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 font-medium">{selectedBanner.category}</span>
-              {getStatusBadge(selectedBanner)}
-            </div>
-            {selectedBanner.description && <p className="text-xs mt-3" style={{ color: 'var(--text-secondary)' }}>{selectedBanner.description}</p>}
-            {selectedBanner.details && (
-              <div className="mt-3 p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
-                <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Details</p>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{selectedBanner.details}</p>
-              </div>
-            )}
-            {selectedBanner.expiresAt && (
-              <p className="text-[10px] mt-3 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                <Calendar className="w-3 h-3" /> Expires: {new Date(selectedBanner.expiresAt).toLocaleString()}
-              </p>
-            )}
-            {selectedBanner.link && (
-              <a href={selectedBanner.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-emerald-500 hover:text-emerald-600 mt-3">
-                <ExternalLink className="w-3 h-3" /> Visit Link
-              </a>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
     </div>
   );
 }

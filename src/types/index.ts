@@ -117,6 +117,16 @@ export interface Notification {
   imageURL?: string;
 }
 
+export interface BannerMediaImage {
+  url: string;
+  description: string;
+}
+
+export interface BannerMediaVideo {
+  url: string;
+  title: string;
+}
+
 export interface Banner {
   id: string;
   title: string;
@@ -129,6 +139,8 @@ export interface Banner {
   createdAt?: string;
   expiresAt?: string;
   isActive?: boolean;
+  mediaImages?: BannerMediaImage[];
+  mediaVideos?: BannerMediaVideo[];
 }
 
 export interface UserQuestion {

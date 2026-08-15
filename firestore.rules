@@ -109,6 +109,13 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
     
+    // Creator requests - authenticated users can create and read their own; admins can read and write all
+    match /creator_requests/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
     // User data (activities, saved videos, listening history)
     match /users/{userId}/{document=**} {
       allow read, write: if isOwner(userId);

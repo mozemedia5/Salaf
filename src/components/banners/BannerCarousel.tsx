@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, X, ExternalLink, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { BANNERS } from '@/lib/data';
@@ -32,6 +32,7 @@ export function BannerCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
 
   const currentBanner = banners[currentIndex];
 
@@ -104,6 +105,7 @@ export function BannerCarousel() {
   }
 
   const hasDetails = currentBanner ? Boolean(currentBanner.details || currentBanner.description) : false;
+  const hasMedia = currentBanner ? Boolean((currentBanner.mediaImages && currentBanner.mediaImages.length > 0) || (currentBanner.mediaVideos && currentBanner.mediaVideos.length > 0) || currentBanner.details) : false;
 
   const goToPrevious = () => {
     setDirection(-1);
@@ -116,14 +118,13 @@ export function BannerCarousel() {
   };
 
   const handleBannerTap = () => {
-    if (currentBanner.link) {
-      // Track link click
-      trackBannerClick(currentBanner.id, currentBanner.title);
+    trackBannerClick(currentBanner.id, currentBanner.title);
+    if (hasMedia) {
+      trackBannerDetailsView(currentBanner.id, currentBanner.title);
+      setShowMediaModal(true);
+    } else if (currentBanner.link) {
       trackBannerLinkOpen(currentBanner.id, currentBanner.title);
-      
-      const href = /^https?:\/\//i.test(currentBanner.link)
-        ? currentBanner.link
-        : `https://${currentBanner.link}`;
+      const href = /^https?:\/\//i.test(currentBanner.link) ? currentBanner.link : `https://${currentBanner.link}`;
       window.open(href, '_blank', 'noopener,noreferrer');
     }
   };
@@ -248,6 +249,117 @@ export function BannerCarousel() {
                 </button>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Interactive Media Explore Modal */}
+      <AnimatePresence>
+        {showMediaModal && currentBanner && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowMediaModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl relative border"
+              style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
+            >
+              <button
+                onClick={() => setShowMediaModal(false)}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+              >
+                <X className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
+              </button>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">
+                    {currentBanner.category}
+                  </span>
+                </div>
+                <h2 className="font-heading font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
+                  {currentBanner.title}
+                </h2>
+
+                {currentBanner.imageURL && (
+                  <div className="rounded-2xl overflow-hidden aspect-[16/8]">
+                    <img src={currentBanner.imageURL} alt="" className="w-full h-full object-cover" />
+                  </div>
+                )}
+
+                {currentBanner.description && (
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {currentBanner.description}
+                  </p>
+                )}
+
+                {currentBanner.details && (
+                  <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                    {currentBanner.details}
+                  </div>
+                )}
+
+                {/* Media Images Gallery */}
+                {currentBanner.mediaImages && currentBanner.mediaImages.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    <h3 className="font-heading font-bold text-sm flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                      <ImageIcon className="w-4 h-4 text-emerald-500" /> Attached Images
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {currentBanner.mediaImages.map((img, i) => (
+                        <div key={i} className="rounded-2xl overflow-hidden border p-2 bg-gray-50 dark:bg-gray-800/40" style={{ borderColor: 'var(--border-color)' }}>
+                          <img src={img.url} alt="" className="w-full h-36 object-cover rounded-xl" />
+                          {img.description && (
+                            <p className="text-xs mt-2 px-1 text-center font-medium" style={{ color: 'var(--text-secondary)' }}>
+                              {img.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Media Videos List */}
+                {currentBanner.mediaVideos && currentBanner.mediaVideos.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    <h3 className="font-heading font-bold text-sm flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                      <VideoIcon className="w-4 h-4 text-purple-500" /> Attached Videos
+                    </h3>
+                    <div className="space-y-3">
+                      {currentBanner.mediaVideos.map((vid, i) => (
+                        <div key={i} className="rounded-2xl border p-3 bg-gray-50 dark:bg-gray-800/40" style={{ borderColor: 'var(--border-color)' }}>
+                          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>{vid.title || 'Video'}</p>
+                          <div className="rounded-xl overflow-hidden aspect-video bg-black flex items-center justify-center">
+                            <video src={vid.url} controls className="w-full h-full object-contain" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Redirect Link Action */}
+                {currentBanner.link && (
+                  <a
+                    href={/^https?:\/\//i.test(currentBanner.link) ? currentBanner.link : `https://${currentBanner.link}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3.5 rounded-xl gradient-emerald text-white font-semibold text-sm shadow-glow flex items-center justify-center gap-2 mt-4"
+                  >
+                    <span>Visit Official Link</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

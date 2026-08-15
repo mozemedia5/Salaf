@@ -73,7 +73,7 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
     try {
       const requestData = {
         userId: user.uid,
-        userEmail: user.email,
+        userEmail: user.email?.toLowerCase() || '',
         userName: user.displayName || user.email?.split('@')[0] || 'User',
         userPhotoURL: user.photoURL || '',
         contentTypes: selectedTypes,
@@ -87,9 +87,9 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
         ...requestData,
         createdAt: new Date().toISOString(),
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error submitting creator request:', err);
-      alert('Failed to submit request. Please try again.');
+      alert(`Failed to submit request: ${err.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }

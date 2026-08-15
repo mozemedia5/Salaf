@@ -1,0 +1,321 @@
+================================================================================
+          MANHAJI SALAF PLATFORM — COMPLETE UI/UX & CODEBASE DOCUMENTATION
+================================================================================
+
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. Executive Overview & Application Purpose
+2. Technology Stack & System Architecture
+3. Design System & UI/UX Standards
+4. Navigation, Views & User Workflows
+5. Content Creator & Admin Dashboard Ecosystem
+6. Global State Management & Zustand Stores
+7. Backend Infrastructure, Realtime Data & Cloud Storage
+8. Detailed File Structure & Component Inventory
+
+================================================================================
+1. EXECUTIVE OVERVIEW & APPLICATION PURPOSE
+================================================================================
+
+The Manhaji Salaf Platform (Salaf) is a modern, high-performance Progressive Web
+Application (PWA) designed to provide a spiritually uplifting, clean, and
+highly engaging platform for authentic Islamic content.
+
+Core Content Categories:
+- Islamic Articles & Scholarly Papers
+- Audio Lectures, Sermons & Quran Recitations
+- Video Lectures (YouTube, TikTok & Direct MP4 Uploads)
+- Direct Question & Answer Submissions to Islamic Scholars
+- Donation & Fundraising Campaigns for Noble Causes
+- High-Resolution Islamic Photo & Calligraphy Gallery
+- Interactive Promotional Banner Carousel & B2B/Creator Marketplace
+
+Target Audience & Experience:
+- Unauthenticated/Guest Users: Access landing experience with glassmorphism preview cards, article summaries, audio previews, and home carousels.
+- Registered End-Users (Clients): Save favorite videos/audio, post video reviews, submit private questions to scholars with native notification alerts when answered, and apply to become Content Creators.
+- Content Creators / Regular Admins: Access custom admin dashboards conditional on granular permissions (e.g., managing owned videos, articles, audio, gallery, campaigns, banners) without full system access.
+- Super Admin: Supreme administrative control over the entire platform (managing creator applications, approving admin accounts, managing all content across users, handling user questions, and accessing real-time Banner Analytics).
+
+================================================================================
+2. TECHNOLOGY STACK & SYSTEM ARCHITECTURE
+================================================================================
+
+Frontend Framework & Build Tools:
+- React 19 (Hooks, Concurrent Features, Clean Functional Architecture)
+- TypeScript (~5.6) for full static typing and type safety
+- Vite (~6.0) for lightning-fast HMR and optimized bundling
+- Tailwind CSS 3 for utility-first responsive styling and custom glassmorphism
+- Framer Motion (^11.0) for fluid view transitions, spring animations, drag sheets, and micro-interactions
+- Lucide React for consistent icon design language
+
+State Management & Data Fetching:
+- Zustand (^5.0) for global lightweight state management with local persistence middleware
+- Realtime Firestore Subscriptions (`onSnapshot`) for zero-latency live sync across all content collections and notification updates
+
+Backend Infrastructure & Cloud Integrations:
+- Firebase Authentication (Email/Password authentication & persistent user sessions)
+- Firebase Firestore NoSQL Database (Real-time collections for users, admins, videos, audio, articles, gallery, campaigns, banners, questions, notifications, activities)
+- Cloudinary Direct Uploads:
+  * Direct image uploads via unsigned preset to Cloudinary (`/image/upload`) for banners and custom thumbnails
+  * Direct audio uploads via unsigned preset `salaf_audio` to Cloudinary (`/video/upload`) with folder `salaf/audio`
+- Browser Native Web APIs:
+  * HTML5 Audio Singleton API wrapped in Zustand (`audioStore.ts`) for persistent audio playback across view navigation
+  * Web Notification API for native browser push alerts on answered questions, new banner announcements, and global notifications
+  * `localStorage` for client-side theme, unread notifications tracking (`salaf_read_notif_ids`), and audio progress persistence
+
+================================================================================
+3. DESIGN SYSTEM & UI/UX STANDARDS
+================================================================================
+
+Visual Language & Glassmorphism:
+- Dark/Light Theme Support: Dynamic theme switching via `themeStore.ts` storing `light`, `dark`, or `system` modes with CSS custom properties (`--bg-primary`, `--bg-secondary`, `--bg-card`, `--bg-glass`, `--text-primary`, `--text-secondary`, `--border-color`).
+- Glassmorphism Styling: Backdrop blurs (`backdrop-blur-md` / `backdrop-blur-xl`), semi-transparent background overlays (`bg-white/70` in light mode, `bg-slate-900/80` in dark mode), subtle borders (`border-white/20` / `border-slate-800/50`), and soft drop shadows (`shadow-xl` / `shadow-2xl`).
+- Islamic Aesthetic Accents: Emerald gradients (`from-emerald-600 to-teal-700`), Gold/Amber accents (`from-amber-500 to-yellow-600`), Amiri Arabic typography, and decorative geometric dividers (`IslamicDivider.tsx`).
+
+Typography & Layout Grid:
+- Fonts: Inter (body text), Poppins (headings), Amiri (Arabic text & Qira'at).
+- Responsive Breakpoints: Mobile-first responsive layout (sm: 640px, md: 768px, lg: 1024px, xl: 1280px).
+- App Shell (`AppShell.tsx`): Persistent top glass header (`AppHeader.tsx`) with search overlay trigger, unread notification counter bell, theme toggle, and profile access + fixed bottom navigation bar (`BottomNav.tsx`).
+
+Curated Thumbnail Grid vs Direct Uploads:
+- High quality standard enforcement: Raw image uploads for audio/video thumbnails are replaced by interactive 15-preset curated thumbnail grids (`VIDEO_PRESET_THUMBNAILS` and `AUDIO_PRESET_THUMBNAILS` defined in `src/lib/data.ts`) selectable via `ThumbnailPicker.tsx`.
+- Direct file uploads are used for audio files (`AudioUploadField.tsx`) and banner media (`ImageUploadField.tsx`).
+
+================================================================================
+4. NAVIGATION, VIEWS & USER WORKFLOWS
+================================================================================
+
+Navigation Views (Controlled by `navigationStore.ts` and `App.tsx` router):
+
+1. Home View (`HomeView.tsx`):
+   - Hero Section with daily Islamic verse/hadith reminder and Bismillah calligraphy.
+   - Dynamic Banner Carousel (`BannerCarousel.tsx`) featuring auto-sliding cards, rating system, attached media modal trigger, and external/explore links.
+   - Quick Action Grid: Fast access to Questions, Explore, Articles, Audio, Videos, Gallery, and Donations.
+   - Continue Listening Section: Resume audio playback with progress percentage bar.
+   - Recent Content Lists: Horizontally scrollable carousels for latest lectures, audio, and urgent campaign cards.
+
+2. Explore Marketplace View (`ExploreView.tsx`):
+   - Interactive content marketplace featuring category filter chips (All, Lectures, Articles, Audio, Donations, Community).
+   - Banner Cards with 1-5 star rating system (stored in Firestore), average rating badge, media image/video attachment previewers, and direct navigation actions.
+
+3. Videos View (`VideosView.tsx`):
+   - Multi-tab support: YouTube lectures, TikTok reminders, uploaded MP4s.
+   - Video Card (`VideoCard.tsx`): Video duration badge, view count, scholar name, category tag, favorite heart button, and star rating.
+   - Embedded Video Player Modal (`VideoPlayer.tsx`): Supports YouTube iframe embedding, TikTok embed player, or HTML5 MP4 player with interactive video review/commenting section.
+
+4. Audio View (`AudioView.tsx`):
+   - Filterable audio track list with category chips and search filter.
+   - Audio Card (`AudioCard.tsx`) & Audio List Item (`AudioListItem.tsx`): Displays artwork, track title, scholar name, duration, play count, and instant play trigger.
+   - Global Mini Player (`MiniPlayer.tsx`): Persistent audio bar pinned above the bottom navigation bar showing active track title, scholar, thumbnail, play/pause button, skip controls, progress bar, and full-screen player toggle.
+   - Full Audio Player Modal (`FullAudioPlayer.tsx`): Drag-to-dismiss bottom sheet modal with large artwork, playback progress slider, time display, play/pause, skip 10s back/forward, playback speed cycle (0.5x, 1.0x, 1.25x, 1.5x, 2.0x), and queue list.
+
+5. Articles View (`ArticlesView.tsx`) & Reader (`ArticleReaderView.tsx`):
+   - Grid/list of article cards (`ArticleCard.tsx`) with category tags, excerpt, author name, reading time estimate, and featured image.
+   - Full-page Reader View (`ArticleReaderView.tsx`): Clean typography, reading progress bar, textual evidence list, external references, tag list, and share action.
+
+6. Gallery View (`GalleryView.tsx`):
+   - Responsive masonry image grid for Islamic calligraphy and photo gallery.
+   - Lightbox Modal: High-resolution image preview, caption display, favorite count toggle, copy share link, and direct image download.
+
+7. Donation & Campaigns View (`DonationView.tsx`):
+   - Featured urgent fundraising campaigns (`CampaignCard.tsx`) with progress bar (percentage raised), total raised vs target amount, donor count, and urgent badge.
+   - Interactive Donation Modal: Preset donation amounts, direct contact/WhatsApp numbers, and contribution process.
+
+8. User Questions View (`UserQuestionsView.tsx`):
+   - Private question submission modal (`AskQuestionModal.tsx`) requiring user location, residence, category, and question text.
+   - List of user submitted questions with status badges ('pending' or 'answered').
+   - When a scholar answers a question, the status changes to 'answered' and triggers a native browser notification linking directly to this view.
+
+9. Profile View (`ProfileView.tsx`) & Authentication (`AuthModal.tsx`):
+   - Unauthenticated Mode: Glassmorphism welcome banner, login and signup tabs with email/password authentication, password strength bar, and terms agreement.
+   - Authenticated User Profile: User avatar, display name, email, account type badge (Client, Creator, Admin, Super Admin), saved videos section, listening history, asked questions list, and 'Become a Content Creator' application modal (`BecomeCreatorModal.tsx`).
+
+10. Notifications View (`NotificationsView.tsx`):
+    - System announcements, new content alerts, and campaign updates.
+    - Unread notification badges synced live with Firestore and tracked locally in `localStorage` (`salaf_read_notif_ids`).
+
+================================================================================
+5. CONTENT CREATOR & ADMIN DASHBOARD ECOSYSTEM
+================================================================================
+
+The platform features a multi-tiered administrative dashboard (`AdminDashboardView.tsx`) with fine-grained Role-Based Access Control (RBAC):
+
+Roles & Access Hierarchy:
+1. `client`: Standard end-user. Can view content, save favorites, submit questions, review videos, and apply for creator status via `creator_requests` Firestore collection.
+2. `admin` (Content Creator): Approved content creator with specific administrative permissions assigned in their Firestore `admins/{uid}` document (`canManageVideos`, `canManageArticles`, `canManageGallery`, `canManageDonations`, `canManageBanners`, `canAnswerQuestions`, `canManageNotifications`).
+   * Regular admins can ONLY see and delete content created by themselves (`createdBy == user.uid` or `uploadedBy == user.uid`).
+   * Dashboard branding automatically adapts title to 'Creator Dashboard'.
+3. `super_admin`: Supreme administrator.
+   * Dashboard branding displays 'Supreme Admin Dashboard'.
+   * Full access to all sub-management sections across all users.
+   * Exclusive right to approve/reject creator applications (`AdminManagement.tsx`), manage admin permissions, view Banner Analytics (`BannerAnalyticsDashboard.tsx`), and delete user questions (`QuestionManagement.tsx`).
+
+Admin Dashboard Sections:
+- Overview (`OverviewSection.tsx`): Key metrics (total videos, audio, articles, gallery items, active campaigns, pending questions) and quick navigation.
+- Video Management (`VideoManagement.tsx`): Add/edit/delete videos (YouTube, TikTok, or direct upload) with ThumbnailPicker grid.
+- Audio Management (`AudioManagement.tsx`): Upload audio files directly to Cloudinary (`AudioUploadField.tsx`), set metadata, duration, scholar name, and curated thumbnail.
+- Article Management (`ArticleManagement.tsx`): Rich article editor with title, category, reading time, excerpt, content body, evidences list, and links.
+- Gallery Management (`GalleryManagement.tsx`): Upload gallery images with caption, category, and link.
+- Donation Management (`DonationManagement.tsx`): Create/edit fundraising campaigns with target amount, current raised amount, donor count, urgent/featured flags, and WhatsApp contact numbers.
+- Banner Management (`BannerManagement.tsx`): Create promotional banners with aspect ratio guidance (16:7 / 21:9 landscape), direct Cloudinary image upload, optional link, and attachable media image/video arrays. Creating a banner dispatches an automated system notification to all users.
+- Banner Analytics (`BannerAnalyticsDashboard.tsx`): Real-time analytics charts (Google Trends style) rendering impression count, click-through rate (CTR), detail views, and engagement trends.
+- Question Management (`QuestionManagement.tsx`): View all user submitted questions. Admins with `canAnswerQuestions` permission can post answers. Only `super_admin` can delete user questions.
+- Admin & Creator Management (`AdminManagement.tsx`): Super admin exclusive view to review pending creator requests, approve/reject requests, elevate users to creators/admins, and customize granular permissions.
+- Notification Management (`NotificationManagement.tsx`): Broadcast site-wide notifications to all registered users.
+
+================================================================================
+6. GLOBAL STATE MANAGEMENT & ZUSTAND STORES
+================================================================================
+
+1. `authStore.ts`:
+   - State: `user`, `role` ('client' | 'admin' | 'super_admin'), `isApproved`, `loading`.
+   - Persistence: Local storage (`salaf-auth`).
+   - Sync: Listens to Firebase Auth `onAuthStateChanged` and reads Firestore `admins/{uid}` document on initialization (`initAuth()`).
+
+2. `audioStore.ts`:
+   - State: `currentTrack`, `isPlaying`, `currentTime`, `duration`, `playbackSpeed`, `queue`, `isMiniPlayerVisible`, `isFullPlayerOpen`.
+   - Audio Engine: Singleton HTML5 `Audio` instance with synchronized event listeners for progress, time updates, track end, and speed adjustments.
+
+3. `navigationStore.ts`:
+   - State: `currentView` (`ViewId`), `history` stack, `selectedCategory`, `searchQuery`, `unreadNotifications`.
+   - Navigational Methods: `navigateTo(view)`, `goBack()`, `setSearchQuery()`, `setUnreadNotifications()`. Exposes `window.navigateAppTo` globally.
+
+4. `themeStore.ts`:
+   - State: `theme` ('light' | 'dark' | 'system').
+   - Persistence: Local storage (`noor-theme`). Updates document root attributes for smooth CSS theme transitions.
+
+5. `adminStore.ts`:
+   - State: `activeSection` (`AdminSection`), `sidebarOpen`, `mobileDrawerOpen`.
+   - Controls admin dashboard sub-view navigation and responsive drawer state.
+
+6. `videoStore.ts`:
+   - State: Cached video list, saved video IDs, current video for playback, review list per video.
+
+7. `questionStore.ts`:
+   - State: User submitted questions, pending questions queue, selected question for answering.
+
+8. `userContentStore.ts`:
+   - State: User favorites across videos, audio, articles, gallery, and user activity history log.
+
+9. `activityStore.ts`:
+   - State: Client-side tracking of user interactions (watched videos, listened audio, asked questions) saved to Firestore `user_activities` collection.
+
+================================================================================
+7. BACKEND INFRASTRUCTURE, REALTIME DATA & CLOUD STORAGE
+================================================================================
+
+Firebase Firestore Database Collections:
+- `users`: User profiles, display name, photo URL, email, role.
+- `admins`: Creator/Admin accounts, email, display name, role ('admin' | 'super_admin'), `isApproved`, permission flags object (`canManageVideos`, `canManageArticles`, etc.).
+- `creator_requests`: Requests submitted by clients to become content creators (user details, motivation text, status: 'pending' | 'approved' | 'rejected').
+- `videos`: Video documents (title, description, videoType, youtubeId, tiktokId, videoURL, thumbnailURL, scholarName, category, duration, viewCount, likes, createdBy, createdAt).
+- `video_reviews`: User ratings and comments on videos.
+- `audio`: Audio tracks (title, description, audioURL, thumbnailURL, scholarName, category, duration, playCount, createdBy, createdAt).
+- `articles`: Articles (title, excerpt, content, featuredImageURL, authorName, category, readingTime, createdBy, createdAt, tags, evidences, links).
+- `gallery`: Gallery images (imageURL, thumbnailURL, caption, category, favoriteCount, uploadedBy, createdAt).
+- `campaigns`: Fundraising campaigns (title, description, imageURL, targetAmount, raisedAmount, donorCount, isUrgent, isFeatured, contactNumber, whatsappNumber, createdBy, createdAt).
+- `banners`: Interactive promotional banners (title, description, details, category, imageURL, link, mediaImages, mediaVideos, averageRating, ratingsCount, createdBy, createdAt).
+- `banner_analytics`: Real-time analytics documents tracking impression counts, clicks, detail views, and daily engagement trends.
+- `questions`: Questions submitted to scholars (userId, userName, userEmail, userResidence, question, category, status: 'pending' | 'answered', answer, answeredBy, answeredByName, createdAt, answeredAt).
+- `notifications`: Global notifications (title, body, link, imageURL, createdBy, createdAt).
+- `user_activities`: Activity logs for user actions across the app.
+
+Cloud Storage Integrations:
+- Cloudinary Image Endpoint (`https://api.cloudinary.com/v1_1/{cloud_name}/image/upload`): Used for unsigned banner uploads and custom thumbnail uploads using `VITE_CLOUDINARY_CLOUD_NAME`.
+- Cloudinary Video/Audio Endpoint (`https://api.cloudinary.com/v1_1/{cloud_name}/video/upload`): Used for direct unsigned audio uploads using preset `salaf_audio` and folder `salaf/audio`.
+
+================================================================================
+8. DETAILED FILE STRUCTURE & COMPONENT INVENTORY
+================================================================================
+
+Root Config & Meta Files:
+- `package.json` — Project dependencies (React 19, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand, Firebase, Lucide React).
+- `vite.config.ts` — Vite build configuration and path aliases (`@/` -> `src/`).
+- `tailwind.config.js` — Tailwind theme customization, custom colors, fonts, and glassmorphism utilities.
+- `index.html` — Application HTML entry point, Google Fonts preloads (Inter, Poppins, Amiri).
+- `firestore.rules` — Firestore security rules enforcing role-based access for clients, creators, and super_admin.
+
+Source Core (`src/`):
+- `App.tsx` — Main application component. Initializes Auth state, global `window.navigateAppTo` handler, Web Notification listeners for answered questions, new banners, and global notifications. Renders `AppShell` and active view.
+- `main.tsx` — React entry point rendering `App`.
+- `index.css` & `App.css` — Global CSS variables, theme classes (`[data-theme="dark"]`), glassmorphism utility classes, and custom scrollbar styling.
+
+Types & Data (`src/types/`, `src/lib/`):
+- `types/index.ts` — Complete TypeScript interfaces (`Video`, `AudioTrack`, `Article`, `GalleryImage`, `Campaign`, `Banner`, `UserQuestion`, `AdminUser`, `UserActivity`, `ViewId`, `AdminSection`, `BannerAnalytics`).
+- `lib/firebase.ts` — Firebase initialization (`auth`, `db`, `storage`).
+- `lib/data.ts` — Category constants and preset thumbnail collections (`VIDEO_PRESET_THUMBNAILS`, `AUDIO_PRESET_THUMBNAILS`).
+- `lib/utils.ts` — Formatting helpers (`cn`, `formatDuration`, `formatDate`, `formatCurrency`).
+- `lib/bannerAnalytics.ts` — Realtime banner event tracking helpers.
+
+Zustand Stores (`src/stores/`):
+- `authStore.ts` — Firebase authentication listener, user role, approval status.
+- `audioStore.ts` — Global audio playback engine and queue manager.
+- `navigationStore.ts` — Active view router, search state, unread notification counter.
+- `themeStore.ts` — Light/dark theme store.
+- `adminStore.ts` — Admin dashboard active section and drawer toggles.
+- `videoStore.ts` — Video playback and saved video state.
+- `questionStore.ts` — Questions store.
+- `userContentStore.ts` — User saved content and favorites.
+- `activityStore.ts` — User activity tracking store.
+
+Custom UI Components (`src/components/ui-custom/`):
+- `GlassCard.tsx` — Glassmorphism container wrapper with backdrop blur and hover animations.
+- `CategoryChip.tsx` — Filter pill button with active/inactive state styling.
+- `SectionHeader.tsx` — Standard section header with title, subtitle, and action link.
+- `ScrollReveal.tsx` — Framer Motion viewport entrance animation wrapper.
+- `ThumbnailPicker.tsx` — Interactive grid selector for preset thumbnails.
+- `ImageUploadField.tsx` — Cloudinary image upload component.
+- `AudioUploadField.tsx` — Direct Cloudinary audio upload component with progress bar.
+
+Layout Components (`src/components/layout/`):
+- `AppShell.tsx` — Main container holding top header, active view, mini player, and bottom navigation.
+- `AppHeader.tsx` — Top header bar with app logo, title, search button, unread notification bell, theme toggle, and profile shortcut.
+- `BottomNav.tsx` — Fixed bottom navigation bar with active tab indicator and smooth transition animations.
+
+Content Cards (`src/components/cards/`):
+- `VideoCard.tsx` — Video card with duration badge, scholar name, play overlay, star rating, and review count.
+- `AudioCard.tsx` — Square audio card with play overlay.
+- `ArticleCard.tsx` — Long-form article card with featured thumbnail, excerpt, category tag, and read time.
+- `CampaignCard.tsx` — Fundraising card with percentage raised progress bar and urgent badge.
+
+Audio Components (`src/components/audio/`):
+- `MiniPlayer.tsx` — Pinned bottom audio playback controller.
+- `FullAudioPlayer.tsx` — Expanded modal audio player with artwork, seeking slider, queue, and speed selector.
+
+Video Components (`src/components/video/`):
+- `VideoPlayer.tsx` — Modal video player supporting YouTube, TikTok, and direct MP4 with review submission form.
+
+Banners Component (`src/components/banners/`):
+- `BannerCarousel.tsx` — Dynamic banner carousel with sliding motion, star rating system, attached media preview modal, and link router.
+
+Admin Dashboard Components (`src/components/admin/`):
+- `OverviewSection.tsx` — Dashboard metrics and summary statistics.
+- `VideoManagement.tsx` — Admin panel for adding, editing, and deleting video lectures.
+- `AudioManagement.tsx` — Admin panel for uploading audio tracks and managing metadata.
+- `ArticleManagement.tsx` — Admin panel for writing and managing articles.
+- `GalleryManagement.tsx` — Admin panel for managing gallery photos and calligraphy.
+- `DonationManagement.tsx` — Admin panel for managing fundraising campaigns.
+- `BannerManagement.tsx` — Admin panel for creating interactive banners and media attachments.
+- `BannerAnalyticsDashboard.tsx` — Super admin real-time analytics dashboard with Google Trends-styled area/line charts.
+- `QuestionManagement.tsx` — Admin panel for reviewing and answering user questions.
+- `AdminManagement.tsx` — Super admin panel for approving creator requests and customizing admin permissions.
+- `NotificationManagement.tsx` — Broadcast notification center.
+
+Views (`src/views/`):
+- `HomeView.tsx` — Main landing page with hero banner, quick actions, audio resume, carousels, and recent updates.
+- `ExploreView.tsx` — Marketplace view with category filtering and interactive banner slider cards.
+- `VideosView.tsx` — Categorized video library with multi-platform tabs.
+- `AudioView.tsx` — Audio tracks library with category filtering and audio player integration.
+- `ArticlesView.tsx` — Article repository feed.
+- `ArticleReaderView.tsx` — Full article reading experience with progress bar.
+- `GalleryView.tsx` — Masonry image gallery with lightbox detail modal.
+- `DonationView.tsx` — List of fundraising campaigns with donation flow modal.
+- `ProfileView.tsx` — User account details, authentication form, saved content, and creator application modal.
+- `UserQuestionsView.tsx` — User questions list and new question modal.
+- `NotificationsView.tsx` — In-app notifications feed.
+- `AdminDashboardView.tsx` — Full-screen administrative dashboard with permission-gated sidebar navigation.
+- `PrivacyPolicyView.tsx` & `TermsOfServiceView.tsx` — Legal compliance pages.
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================

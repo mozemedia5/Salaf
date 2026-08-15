@@ -15,6 +15,7 @@ export interface Video {
   likes: number;
   createdAt: string;
   createdBy?: string;
+  uploadedBy?: string;
   isActive: boolean;
 }
 
@@ -58,6 +59,8 @@ export interface Article {
   category: string;
   readingTime: string;
   createdAt: string;
+  createdBy?: string;
+  uploadedBy?: string;
   tags?: string[];
   evidences?: string[];
   links?: { title: string; url: string }[];

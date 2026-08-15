@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   Eye, MousePointer, TrendingUp, Users, Clock, ExternalLink, 
   BarChart3, Calendar, RefreshCw, Target, Smartphone, 
-  TrendingDown, Activity
+  Activity
 } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
 import { 
@@ -32,7 +32,7 @@ export function BannerAnalyticsDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [bannerStats, setBannerStats] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<any[]>([]);
-  const [selectedBannerId, setSelectedBannerId] = useState<string>('all');
+  const [selectedBannerId] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'overview' | 'demographics' | 'performance'>('overview');
 
   const loadAnalytics = async () => {

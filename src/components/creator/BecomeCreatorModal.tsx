@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Sparkles, Video, Headphones, Image as ImageIcon, FileText, CheckCircle, Clock, Send, ShieldCheck, HelpCircle } from 'lucide-react';
+import { X, Sparkles, Video, Headphones, Image as ImageIcon, FileText, CheckCircle, Send, ShieldCheck, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -132,45 +132,55 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
         {loadingCheck ? (
           <div className="py-12 text-center text-sm" style={{ color: 'var(--text-muted)' }}>Loading...</div>
         ) : existingRequest ? (
-          <div className="space-y-4 py-4 text-center">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="space-y-4 py-4 text-center">
             {existingRequest.status === 'pending' ? (
-              <div className="p-6 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
-                <Clock className="w-12 h-12 text-amber-500 mx-auto mb-3 animate-pulse" />
-                <h4 className="font-bold text-base text-amber-700 dark:text-amber-400">Request Pending Review</h4>
-                <p className="text-xs text-amber-600 dark:text-amber-300 mt-2 leading-relaxed">
-                  Your request to become a Creator has been submitted to the Supreme Admin and is currently undergoing review.
-                  You will receive a notification once your request is approved!
+              <div className="p-6 rounded-2xl bg-emerald-50/80 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 shadow-sm">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-800/30 flex items-center justify-center mx-auto mb-3 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle className="w-9 h-9" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-800/40 text-emerald-700 dark:text-emerald-300">
+                  Request Successfully Submitted
+                </span>
+                <h4 className="font-heading font-bold text-lg text-emerald-800 dark:text-emerald-200 mt-3">
+                  Application Under Review
+                </h4>
+                <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-2 leading-relaxed max-w-sm mx-auto">
+                  Your request to become a Content Creator has been successfully sent to the Supreme Admin! Once approved, you will unlock full access to the Creator Dashboard.
                 </p>
-                <div className="mt-4 pt-3 border-t border-amber-200 dark:border-amber-800/30 text-left">
-                  <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-200">Selected Content Types:</p>
-                  <p className="text-xs text-amber-700 dark:text-amber-300 capitalize mt-1">
-                    {existingRequest.contentTypes?.join(', ')}
-                  </p>
+                <div className="mt-4 pt-3 border-t border-emerald-200/60 dark:border-emerald-800/30 text-left">
+                  <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-200">Requested Media Categories:</p>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {existingRequest.contentTypes?.map((ct: string) => (
+                      <span key={ct} className="text-[10px] px-2.5 py-1 rounded-lg bg-emerald-200/60 dark:bg-emerald-800/50 text-emerald-800 dark:text-emerald-200 font-semibold capitalize">
+                        {ct}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : existingRequest.status === 'approved' ? (
-              <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30">
+              <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30">
                 <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                <h4 className="font-bold text-base text-emerald-700 dark:text-emerald-400">You Are a Creator!</h4>
+                <h4 className="font-heading font-bold text-lg text-emerald-700 dark:text-emerald-400">You Are an Approved Creator!</h4>
                 <p className="text-xs text-emerald-600 dark:text-emerald-300 mt-2">
-                  Your creator application has been approved. Access your Creator Dashboard from your profile to start uploading content.
+                  Your application was approved by Supreme Admin. You can now access your Creator Dashboard from your Profile settings.
                 </p>
               </div>
             ) : (
               <div className="p-6 rounded-2xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30">
-                <h4 className="font-bold text-base text-red-700 dark:text-red-400">Request Declined</h4>
+                <h4 className="font-heading font-bold text-base text-red-700 dark:text-red-400">Application Declined</h4>
                 <p className="text-xs text-red-600 dark:text-red-300 mt-2">
-                  Unfortunately, your request could not be approved at this time.
+                  Unfortunately, your request could not be approved at this time. You may contact support or reapply later.
                 </p>
               </div>
             )}
             <button
               onClick={onClose}
-              className="w-full py-3 rounded-xl gradient-emerald text-white font-semibold text-sm shadow-glow mt-4"
+              className="w-full py-3.5 rounded-xl gradient-emerald text-white font-semibold text-sm shadow-glow mt-4"
             >
-              Close
+              Done / Close
             </button>
-          </div>
+          </motion.div>
         ) : (
           <div className="space-y-5">
             {/* Learn Section */}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, ArrowRight, Image as ImageIcon, Video as VideoIcon, Play, LogIn, Sparkles, BookOpen, Music, Shield, ArrowUpRight } from 'lucide-react';
+import { Download, ArrowRight, Image as ImageIcon, Video as VideoIcon, Play, LogIn, Sparkles, BookOpen, Music, Shield, ArrowUpRight, Compass, Activity, Eye, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';
@@ -160,7 +160,99 @@ export function HomeView() {
             </p>
           </GlassCard>
         </motion.div>
+
+        {/* HINT BANNER RIGHT AFTER HERO SECTION */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-5 p-4 rounded-2xl border shadow-sm flex items-center justify-between gap-3 text-left relative overflow-hidden"
+          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/20 to-transparent rounded-bl-full pointer-events-none" />
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-500 flex-shrink-0">
+              <Compass className="w-5 h-5 animate-pulse" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                Hint & Explore Marketplace
+              </span>
+              <h3 className="font-heading font-bold text-xs sm:text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                Discover Rated Banners & Media Highlights
+              </h3>
+              <p className="text-[10px] line-clamp-1" style={{ color: 'var(--text-muted)' }}>
+                Explore community ratings, external links, and interactive media attachments.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigateTo('explore')}
+            className="flex-shrink-0 px-3.5 py-2 rounded-xl gradient-emerald text-white text-xs font-semibold shadow-md flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all"
+          >
+            Explore <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </motion.div>
       </ScrollReveal>
+
+      {/* CJ DROPSHIPPING-STYLE LIVE METRICS & FEATURE GRID (Styled like Super Admin Analytics) */}
+      <div className="px-4 mt-2">
+        <div className="p-4 rounded-2xl border shadow-sm space-y-3" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-emerald-500" />
+              <h3 className="font-heading font-bold text-xs uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
+                Platform Analytics & Live Hub
+              </h3>
+            </div>
+            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+              Real-time Active
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="p-2.5 rounded-xl border flex flex-col" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-semibold" style={{ color: 'var(--text-muted)' }}>Lectures</span>
+                <VideoIcon className="w-3.5 h-3.5 text-blue-500" />
+              </div>
+              <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{videos.length}</span>
+              <span className="text-[8px] text-emerald-500 font-medium">+100% Verified</span>
+            </div>
+
+            <div className="p-2.5 rounded-xl border flex flex-col" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-semibold" style={{ color: 'var(--text-muted)' }}>Audio Tracks</span>
+                <Music className="w-3.5 h-3.5 text-purple-500" />
+              </div>
+              <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{recentAudio.length}</span>
+              <span className="text-[8px] text-emerald-500 font-medium">Live Recitations</span>
+            </div>
+
+            <div className="p-2.5 rounded-xl border flex flex-col" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-semibold" style={{ color: 'var(--text-muted)' }}>Total Views</span>
+                <Eye className="w-3.5 h-3.5 text-amber-500" />
+              </div>
+              <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                {videos.reduce((acc, v) => acc + (v.viewCount || 0), 0).toLocaleString()}
+              </span>
+              <span className="text-[8px] text-emerald-500 font-medium">&uarr; Trending</span>
+            </div>
+
+            <div className="p-2.5 rounded-xl border flex flex-col" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-semibold" style={{ color: 'var(--text-muted)' }}>Likes</span>
+                <Heart className="w-3.5 h-3.5 text-rose-500" />
+              </div>
+              <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                {videos.reduce((acc, v) => acc + (v.likes || 0), 0).toLocaleString()}
+              </span>
+              <span className="text-[8px] text-emerald-500 font-medium">Community Engagement</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* 2. LOGIN CTA for guests */}
       <AnimatePresence>
@@ -216,10 +308,6 @@ export function HomeView() {
         )}
       </AnimatePresence>
 
-      {/* 3. BANNER CAROUSEL */}
-      <div className="px-4 mt-2">
-        <BannerCarousel />
-      </div>
 
       {/* 4. ARTICLES SECTION — Easy access for users to read admin-written articles */}
       <div className="mt-6 px-4">
@@ -415,6 +503,12 @@ export function HomeView() {
           <CampaignCard campaign={featuredCampaign} featured />
         </div>
       )}
+
+      {/* DASHBOARD BANNERS MOVED AFTER DONATION / FUNDRAISING SECTION */}
+      <div className="px-4 mt-8">
+        <SectionHeader title="Platform Banners & Announcements" action="Explore All" onAction={() => navigateTo('explore')} />
+        <BannerCarousel />
+      </div>
 
       {/* Footer */}
       <div className="mt-10 pb-8 text-center">

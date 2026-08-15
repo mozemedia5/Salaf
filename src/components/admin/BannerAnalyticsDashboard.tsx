@@ -7,11 +7,11 @@ import {
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
 import { useAdminStore } from '@/stores/adminStore';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import { 
-  getAllBannerAnalytics, 
   getAggregatedBannerStats, 
-  getTimeframeStats,
-  getBannerAnalytics 
+  getTimeframeStats
 } from '@/lib/bannerAnalytics';
 
 type TimeRange = '7' | '14' | '30' | '90';
@@ -36,45 +36,70 @@ export function BannerAnalyticsDashboard() {
   const [selectedBannerId] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'overview' | 'demographics' | 'performance'>('overview');
 
-  const loadAnalytics = async () => {
+  useEffect(() => {
     setLoading(true);
-    try {
+    const q = query(collection(db, 'bannerAnalytics'));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const liveDocs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
       const days = parseInt(timeRange);
-      const [statsData, bannerStatsData, trendDataResult] = await Promise.all([
+      const [statsData, bannerStatsData] = await Promise.all([
         getTimeframeStats(days),
-        getAggregatedBannerStats(days),
-        selectedBannerId === 'all' 
-          ? getAllBannerAnalytics(days).then(data => aggregateByDate(data))
-          : getBannerAnalytics(selectedBannerId, days)
+        getAggregatedBannerStats(days)
       ]);
+
+      // Aggregate live Firestore documents for Google Trends style chart
+      const byDate: Record<string, any> = {};
       
+      // Generate past dates for seamless smooth trends if database is empty or new
+      const now = new Date();
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        byDate[dateStr] = { date: dateStr, impressions: 0, clicks: 0, detailsViews: 0, linkCompletions: 0 };
+      }
+
+      liveDocs.forEach((record: any) => {
+        if (record.date) {
+          if (!byDate[record.date]) {
+            byDate[record.date] = { date: record.date, impressions: 0, clicks: 0, detailsViews: 0, linkCompletions: 0 };
+          }
+          byDate[record.date].impressions += record.impressions || 0;
+          byDate[record.date].clicks += record.clicks || 0;
+          byDate[record.date].detailsViews += record.detailsViews || 0;
+          byDate[record.date].linkCompletions += record.linkCompletions || 0;
+        }
+      });
+
+      const trendList = Object.values(byDate).sort((a: any, b: any) => a.date.localeCompare(b.date));
+
       setStats(statsData);
       setBannerStats(bannerStatsData);
-      setTrendData(trendDataResult);
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-    } finally {
+      setTrendData(trendList);
       setLoading(false);
-    }
-  };
-
-  const aggregateByDate = (data: any[]) => {
-    const byDate: Record<string, any> = {};
-    data.forEach((record: any) => {
-      if (!byDate[record.date]) {
-        byDate[record.date] = { date: record.date, impressions: 0, clicks: 0, detailsViews: 0, linkCompletions: 0 };
-      }
-      byDate[record.date].impressions += record.impressions || 0;
-      byDate[record.date].clicks += record.clicks || 0;
-      byDate[record.date].detailsViews += record.detailsViews || 0;
-      byDate[record.date].linkCompletions += record.linkCompletions || 0;
+    }, (error) => {
+      console.error("Failed to stream banner analytics:", error);
+      setLoading(false);
     });
-    return Object.values(byDate).sort((a: any, b: any) => a.date.localeCompare(b.date));
-  };
 
-  useEffect(() => {
-    loadAnalytics();
+    return () => unsubscribe();
   }, [timeRange, selectedBannerId]);
+
+  const loadAnalytics = async () => {
+    setLoading(true);
+    const days = parseInt(timeRange);
+    const [statsData, bannerStatsData] = await Promise.all([
+      getTimeframeStats(days),
+      getAggregatedBannerStats(days)
+    ]);
+    setStats(statsData);
+    setBannerStats(bannerStatsData);
+    setLoading(false);
+  };
 
   const getStatusColor = (value: number) => {
     if (value >= 5) return 'text-emerald-500';

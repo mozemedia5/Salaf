@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { AppShell } from '@/components/layout/AppShell';
 import { FullAudioPlayer } from '@/components/audio/FullAudioPlayer';
 import { HomeView } from '@/views/HomeView';
+import { ExploreView } from './views/ExploreView';
 import { VideosView } from '@/views/VideosView';
 import { AudioView } from '@/views/AudioView';
 import { ArticlesView } from '@/views/ArticlesView';
@@ -230,6 +231,7 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case 'home': return <HomeView />;
+      case 'explore': return <ExploreView />;
       case 'videos': return <VideosView />;
       case 'audio': return <AudioView />;
       case 'articles': return <ArticlesView />;

@@ -35,7 +35,7 @@ const SECTIONS: SectionDef[] = [
   { id: 'articles', label: 'Articles', icon: FileText, permission: 'canManageArticles' },
   { id: 'gallery', label: 'Gallery', icon: ImageIcon, permission: 'canManageGallery' },
   { id: 'donations', label: 'Donations', icon: HandHeart, permission: 'canManageDonations' },
-  { id: 'banners', label: 'Banners', icon: LayoutPanelTop, superAdminOnly: true },
+  { id: 'banners', label: 'Banners', icon: LayoutPanelTop, permission: 'canManageBanners' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, superAdminOnly: true },
   { id: 'questions', label: 'Questions', icon: MessageCircle, permission: 'canAnswerQuestions' },
   { id: 'admins', label: 'Admins', icon: Users, superAdminOnly: true },

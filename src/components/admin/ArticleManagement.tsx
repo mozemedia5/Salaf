@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Search, X, Tag, Link2, BookOpen } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -11,6 +12,7 @@ const CATEGORIES = ['Quran', 'Hadith', 'Fiqh', 'Seerah', 'Aqeedah', 'Dua', 'Rama
 
 export function ArticleManagement() {
   const { articles, setArticles } = useAdminStore();
+  const { isSuperAdmin, user: currentUser } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
@@ -44,6 +46,7 @@ export function ArticleManagement() {
         ...formData,
         featuredImageUrl: formData.featuredImageURL,
         updatedAt: serverTimestamp(),
+        createdBy: editingArticle?.createdBy || (editingArticle as any)?.uploadedBy || currentUser?.uid,
       };
       if (!editingArticle) {
         data.createdAt = serverTimestamp();
@@ -63,9 +66,14 @@ export function ArticleManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (article: Article) => {
+    const isOwner = article.createdBy === currentUser?.uid || (article as any).uploadedBy === currentUser?.uid;
+    if (!isSuperAdmin && !isOwner) {
+      alert('You are not authorized to delete content uploaded by others.');
+      return;
+    }
     if (!confirm('Delete this article?')) return;
-    await deleteDoc(doc(db, 'articles', id));
+    await deleteDoc(doc(db, 'articles', article.id));
   };
 
   const resetForm = () => {
@@ -144,7 +152,9 @@ export function ArticleManagement() {
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button onClick={() => openEdit(article)} className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20"><Pencil className="w-3.5 h-3.5 text-emerald-500" /></button>
-                <button onClick={() => handleDelete(article.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
+                {(isSuperAdmin || article.createdBy === currentUser?.uid || (article as any).uploadedBy === currentUser?.uid) && (
+                  <button onClick={() => handleDelete(article)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
+                )}
               </div>
             </div>
           </motion.div>

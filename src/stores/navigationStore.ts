@@ -42,7 +42,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   selectedAudioId: null,
   isMiniPlayerVisible: false,
   setMiniPlayerVisible: (v) => set({ isMiniPlayerVisible: v }),
-  unreadNotifications: 3,
+  unreadNotifications: 0,
 
   setActiveTab: (tab) => {
     const tabViews: TabId[] = ['home', 'videos', 'audio', 'donate', 'profile'];

@@ -1,15 +1,28 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Shield, X, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Shield, X, CheckCircle, Clock, Sparkles, UserCheck, Check, Ban } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, setDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { AdminUser } from '@/types';
+
+interface CreatorRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  userPhotoURL?: string;
+  contentTypes: string[];
+  additionalInfo?: string;
+  status: 'pending' | 'approved' | 'declined';
+  createdAt: any;
+}
 
 export function AdminManagement() {
   const { isSuperAdmin, user: currentUser } = useAdminAuth();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [invites, setInvites] = useState<AdminUser[]>([]);
+  const [creatorRequests, setCreatorRequests] = useState<CreatorRequest[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ email: '', displayName: '', role: 'admin' as 'admin' | 'super_admin' });
   const [saving, setSaving] = useState(false);
@@ -19,6 +32,14 @@ export function AdminManagement() {
     const q = query(collection(db, 'admins'));
     const unsub = onSnapshot(q, (snap) => {
       setAdmins(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminUser)));
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, 'creator_requests'));
+    const unsub = onSnapshot(q, (snap) => {
+      setCreatorRequests(snap.docs.map(d => ({ id: d.id, ...d.data() } as CreatorRequest)));
     });
     return () => unsub();
   }, []);
@@ -98,6 +119,65 @@ export function AdminManagement() {
     await deleteDoc(doc(db, 'admin_invites', inviteEmail));
   };
 
+  const handleApproveCreator = async (req: CreatorRequest) => {
+    try {
+      // 1. Create or update user's admin document in `admins/{userId}`
+      const adminDocRef = doc(db, 'admins', req.userId);
+      await setDoc(adminDocRef, {
+        email: req.userEmail.toLowerCase(),
+        displayName: req.userName || req.userEmail.split('@')[0],
+        role: 'admin',
+        isApproved: true,
+        isEmailVerified: true,
+        approvedAt: serverTimestamp(),
+        approvedBy: currentUser?.uid,
+        createdAt: serverTimestamp(),
+        permissions: {
+          canManageVideos: req.contentTypes.includes('videos') || req.contentTypes.includes('all'),
+          canManageArticles: req.contentTypes.includes('articles') || req.contentTypes.includes('all'),
+          canManageGallery: req.contentTypes.includes('images') || req.contentTypes.includes('all'),
+          canManageDonations: false,
+          canManageBanners: false,
+          canManageAdmins: false,
+          canManageNotifications: true,
+          canAnswerQuestions: true,
+        },
+      }, { merge: true });
+
+      // 2. Update request status
+      await updateDoc(doc(db, 'creator_requests', req.id), {
+        status: 'approved',
+        approvedAt: serverTimestamp(),
+        approvedBy: currentUser?.uid,
+      });
+
+      // 3. Send notification to user
+      await addDoc(collection(db, 'notifications'), {
+        title: '🎉 Creator Access Granted!',
+        body: 'Your request to become a Creator has been approved by Supreme Admin! Click Get Started to go to your Creator Dashboard.',
+        type: 'announcement',
+        targetUserId: req.userId,
+        getStartedAction: true,
+        link: 'admin-dashboard',
+        isRead: false,
+        createdAt: serverTimestamp(),
+        createdBy: currentUser?.uid,
+      });
+    } catch (err) {
+      console.error('Error approving creator request:', err);
+      alert('Failed to approve request. Please try again.');
+    }
+  };
+
+  const handleDeclineCreator = async (reqId: string) => {
+    if (!confirm('Decline this creator request?')) return;
+    await updateDoc(doc(db, 'creator_requests', reqId), {
+      status: 'declined',
+      declinedAt: serverTimestamp(),
+      declinedBy: currentUser?.uid,
+    });
+  };
+
   if (!isSuperAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
@@ -119,6 +199,66 @@ export function AdminManagement() {
           <Plus className="w-4 h-4" /> Invite Admin
         </button>
       </div>
+
+      {/* Pending Creator Requests */}
+      {creatorRequests.filter(r => r.status === 'pending').length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-500" />
+            <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              Pending Creator Requests ({creatorRequests.filter(r => r.status === 'pending').length})
+            </p>
+          </div>
+          {creatorRequests.filter(r => r.status === 'pending').map((req, i) => (
+            <motion.div
+              key={req.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                    <UserCheck className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{req.userName}</h4>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{req.userEmail}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Wants to create:</span>
+                      {req.contentTypes?.map(ct => (
+                        <span key={ct} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-800/40 text-emerald-700 dark:text-emerald-300 font-medium capitalize">
+                          {ct}
+                        </span>
+                      ))}
+                    </div>
+                    {req.additionalInfo && (
+                      <p className="text-xs italic mt-2 p-2.5 rounded-xl bg-white/60 dark:bg-gray-900/40 border border-emerald-100 dark:border-emerald-900/20" style={{ color: 'var(--text-secondary)' }}>
+                        "{req.additionalInfo}"
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => handleApproveCreator(req)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl gradient-emerald text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Approve
+                  </button>
+                  <button
+                    onClick={() => handleDeclineCreator(req.id)}
+                    className="p-1.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors"
+                  >
+                    <Ban className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {/* Unclaimed invites - waiting for the invited person to sign in once */}
       {unclaimedInvites.length > 0 && (

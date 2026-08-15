@@ -157,10 +157,22 @@ export function NotificationsView() {
                             {notification.title}
                           </p>
                           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{notification.body}</p>
-                          {notification.link && (
+                          {(notification as any).getStartedAction && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markAsRead(notification.id);
+                                useNavigationStore.getState().navigateTo('admin-dashboard');
+                              }}
+                              className="mt-2.5 px-4 py-1.5 rounded-xl gradient-emerald text-white text-xs font-semibold shadow-sm hover:shadow-md transition-all inline-flex items-center gap-1.5"
+                            >
+                              <span>Get Started</span> →
+                            </button>
+                          )}
+                          {notification.link && !(notification as any).getStartedAction && (
                             <p className="text-[10px] text-emerald-500 font-medium mt-1 underline truncate max-w-xs">{notification.link}</p>
                           )}
-                          <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                          <p className="text-[10px] mt-2 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
                             <Calendar className="w-3 h-3" />
                             {new Date(notification.createdAt).toLocaleString()}
                           </p>

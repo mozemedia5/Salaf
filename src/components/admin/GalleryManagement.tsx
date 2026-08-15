@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Search, X, Image, Upload, Pencil, Link2 } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { ImageUploadField } from '@/components/ui-custom/ImageUploadField';
 import { collection, query, onSnapshot, deleteDoc, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -11,6 +12,7 @@ const CATEGORIES = ['Architecture', 'Nature', 'Calligraphy', 'Lifestyle', 'Event
 
 export function GalleryManagement() {
   const { galleryImages, setGalleryImages } = useAdminStore();
+  const { isSuperAdmin, user: currentUser } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
@@ -58,6 +60,8 @@ export function GalleryManagement() {
           category: formData.category,
           link: formData.link || '',
           favoriteCount: 0,
+            uploadedBy: currentUser?.uid,
+            createdBy: currentUser?.uid,
           createdAt: serverTimestamp(),
         });
       }
@@ -70,9 +74,14 @@ export function GalleryManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (img: GalleryImage) => {
+    const isOwner = img.uploadedBy === currentUser?.uid || (img as any).createdBy === currentUser?.uid;
+    if (!isSuperAdmin && !isOwner) {
+      alert('You are not authorized to delete content uploaded by others.');
+      return;
+    }
     if (!confirm('Delete this image?')) return;
-    await deleteDoc(doc(db, 'gallery', id));
+    await deleteDoc(doc(db, 'gallery', img.id));
   };
 
   const openEdit = (img: GalleryImage) => {
@@ -135,9 +144,11 @@ export function GalleryManagement() {
                   <button onClick={() => openEdit(img)} className="p-1 rounded bg-emerald-500/80">
                     <Pencil className="w-3 h-3 text-white" />
                   </button>
-                  <button onClick={() => handleDelete(img.id)} className="p-1 rounded bg-red-500/80">
-                    <Trash2 className="w-3 h-3 text-white" />
-                  </button>
+                  {(isSuperAdmin || img.uploadedBy === currentUser?.uid || (img as any).createdBy === currentUser?.uid) && (
+                    <button onClick={() => handleDelete(img)} className="p-1 rounded bg-red-500/80">
+                      <Trash2 className="w-3 h-3 text-white" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

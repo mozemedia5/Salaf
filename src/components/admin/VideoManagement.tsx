@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Play, Eye, Heart, Search, X } from 'lucide-react';
 import { useAdminStore } from '@/stores/adminStore';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { ThumbnailPicker } from '@/components/ui-custom/ThumbnailPicker';
 import { collection, query, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -12,6 +13,7 @@ const CATEGORIES = ['Quran', 'Hadith', 'Fiqh', 'Seerah', 'Aqeedah', 'Dua', 'Rama
 
 export function VideoManagement() {
   const { videos, setVideos } = useAdminStore();
+  const { isSuperAdmin, user: currentUser } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
@@ -76,6 +78,8 @@ export function VideoManagement() {
         likes: editingVideo?.likes || 0,
         updatedAt: serverTimestamp(),
       };
+      data.createdBy = editingVideo?.createdBy || currentUser?.uid;
+      data.uploadedBy = editingVideo?.uploadedBy || currentUser?.uid;
       if (!editingVideo) {
         data.createdAt = serverTimestamp();
       }
@@ -96,9 +100,14 @@ export function VideoManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (video: Video) => {
+    const isOwner = video.createdBy === currentUser?.uid || (video as any).uploadedBy === currentUser?.uid;
+    if (!isSuperAdmin && !isOwner) {
+      alert('You are not authorized to delete content uploaded by others.');
+      return;
+    }
     if (!confirm('Delete this video?')) return;
-    await deleteDoc(doc(db, 'videos', id));
+    await deleteDoc(doc(db, 'videos', video.id));
   };
 
   const handleToggleActive = async (video: Video) => {
@@ -200,12 +209,14 @@ export function VideoManagement() {
                   >
                     <Pencil className="w-3.5 h-3.5 text-emerald-500" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(video.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                  </button>
+                  {(isSuperAdmin || video.createdBy === currentUser?.uid || (video as any).uploadedBy === currentUser?.uid) && (
+                    <button
+                      onClick={() => handleDelete(video)}
+                      className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-2">

@@ -110,9 +110,11 @@ export function AdminDashboardView() {
       <div className="flex items-center gap-3 px-2 py-4">
         <img src="/icons/icon-192x192.png" alt="Salaf" className="h-9 w-9 rounded-lg shadow-sm" />
         <div>
-          <p className="font-heading font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Admin Panel</p>
+          <p className="font-heading font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+            {isSuperAdmin ? 'Admin Dashboard' : 'Creator Dashboard'}
+          </p>
           <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-            {isSuperAdmin ? 'Supreme Admin' : 'Admin'} · {adminProfile?.displayName || adminProfile?.email}
+            {isSuperAdmin ? 'Supreme Admin' : 'Creator'} · {adminProfile?.displayName || adminProfile?.email}
           </p>
         </div>
       </div>

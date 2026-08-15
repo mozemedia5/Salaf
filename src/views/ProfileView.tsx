@@ -5,7 +5,7 @@ import {
   Bell, Moon, Globe, User, Lock, Shield, FileText,
   HelpCircle, LogOut, ChevronRight, UserCheck, AlertTriangle,
   MessageCircle, Eye, ThumbsUp, Headphones, BookOpen,
-  ChevronLeft, CheckCircle
+  ChevronLeft, CheckCircle, Sparkles, LayoutDashboard
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -28,6 +28,7 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { cn } from '@/lib/utils';
 import { EditProfileModal } from '@/components/auth/EditProfileModal';
 import { AskQuestionModal } from '@/components/questions/AskQuestionModal';
+import { BecomeCreatorModal } from '@/components/creator/BecomeCreatorModal';
 
 interface MenuGroup {
   title: string;
@@ -40,7 +41,7 @@ export function ProfileView() {
   const { openAuthModal, navigateTo, setActiveTab } = useNavigationStore();
   const { theme, toggleTheme } = useThemeStore();
   const { user, logout } = useAuth();
-  const { isAdmin } = useAdminAuth();
+  const { isAdmin, isSuperAdmin } = useAdminAuth();
   const {
     savedLectures,
     downloadHistory,
@@ -64,6 +65,7 @@ export function ProfileView() {
   const [showActivity, setShowActivity] = useState(false);
   const [showQuestions, setShowQuestions] = useState(false);
   const [showAskQuestion, setShowAskQuestion] = useState(false);
+  const [showBecomeCreator, setShowBecomeCreator] = useState(false);
   const [activityTab, setActivityTab] = useState<ActivityTab>('all');
 
   useEffect(() => {
@@ -325,7 +327,10 @@ export function ProfileView() {
     {
       title: 'Account',
       items: [
-        ...(isAdmin ? [{ icon: Shield, label: 'Admin Dashboard', action: () => navigateTo('admin-dashboard') }] : []),
+        ...(isAdmin
+          ? [{ icon: isSuperAdmin ? Shield : LayoutDashboard, label: isSuperAdmin ? 'Admin Dashboard' : 'Creator Dashboard', action: () => navigateTo('admin-dashboard') }]
+          : [{ icon: Sparkles, label: 'Become a Creator', action: () => { if (!user) { openAuthModal('login'); return; } setShowBecomeCreator(true); } }]
+        ),
         { icon: User, label: 'Edit Profile', action: handleEditProfile },
         { icon: Lock, label: 'Change Password', action: handleChangePassword },
         { icon: Shield, label: 'Privacy Policy', action: () => navigateTo('privacy-policy') },
@@ -455,6 +460,7 @@ export function ProfileView() {
 
       <AnimatePresence>
         {isEditModalOpen && <EditProfileModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} mode={editMode} />}
+        {showBecomeCreator && <BecomeCreatorModal isOpen={showBecomeCreator} onClose={() => setShowBecomeCreator(false)} />}
       </AnimatePresence>
 
       <AlertDialog open={isLogoutDialogOpen} onOpenChange={setLogoutDialogOpen}>

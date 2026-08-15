@@ -100,11 +100,11 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
     
-    // Creator requests - users can read/create their own, admins can read/update all
+    // Creator requests - users can read/create/update their own, admins can read/update all
     match /creator_requests/{userId} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAdmin();
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow delete: if isSuperAdmin();
     }
 

@@ -73,7 +73,7 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
     try {
       const requestData = {
         userId: user.uid,
-        userEmail: user.email,
+        userEmail: user.email || '',
         userName: user.displayName || user.email?.split('@')[0] || 'User',
         userPhotoURL: user.photoURL || '',
         contentTypes: selectedTypes,
@@ -82,7 +82,7 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
         createdAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'creator_requests', user.uid), requestData);
+      await setDoc(doc(db, 'creator_requests', user.uid), requestData, { merge: true });
       setExistingRequest({
         ...requestData,
         createdAt: new Date().toISOString(),

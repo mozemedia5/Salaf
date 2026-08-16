@@ -119,13 +119,13 @@ export function BannerCarousel() {
 
   return (
     <div className="space-y-4 mb-8">
-      {/* Primary Banner Carousel Slider Container in Airtel Standalone Div format */}
+      {/* Primary Banner Carousel Container */}
       <div
-        className="relative w-full rounded-2xl overflow-hidden shadow-md border select-none group"
+        className="relative w-full rounded-3xl overflow-hidden shadow-md border select-none group flex flex-col"
         style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
       >
-        {/* Aspect-ratio container for professional landscape dimensions */}
-        <div className="relative w-full aspect-[16/7] md:aspect-[21/9] overflow-hidden">
+        {/* Clean Image Area */}
+        <div className="relative w-full aspect-[16/7] md:aspect-[21/9] overflow-hidden bg-black/5 dark:bg-black/40">
           <AnimatePresence initial={false} custom={direction} mode="popLayout">
             <motion.div
               key={currentIndex}
@@ -138,28 +138,14 @@ export function BannerCarousel() {
                 x: { type: "spring", stiffness: 280, damping: 28 },
                 opacity: { duration: 0.25 }
               }}
-              className="absolute inset-0 w-full h-full"
+              className="absolute inset-0 w-full h-full cursor-pointer"
+              onClick={() => openExploreModal(currentBanner)}
             >
-              <button
-                type="button"
-                onClick={() => openExploreModal(currentBanner)}
-                className="relative block w-full h-full text-left cursor-pointer"
-                aria-label={`Open ${currentBanner.title}`}
-              >
-                <img
-                  src={currentBanner.imageURL || (currentBanner as any).bannerImageUrl}
-                  alt={currentBanner.title}
-                  className="w-full h-full object-cover rounded-2xl block select-none pointer-events-none"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent flex items-end p-6 rounded-2xl">
-                  <div className="pr-8">
-                    <span className="text-white/95 text-[10px] md:text-xs font-semibold tracking-wide drop-shadow-sm uppercase px-2 py-0.5 rounded bg-emerald-500/80 mb-1 inline-block">
-                      {currentBanner.category}
-                    </span>
-                    <h3 className="text-white font-heading font-bold text-lg md:text-2xl drop-shadow-md leading-tight">{currentBanner.title}</h3>
-                  </div>
-                </div>
-              </button>
+              <img
+                src={currentBanner.imageURL || (currentBanner as any).bannerImageUrl}
+                alt={currentBanner.title || 'Banner'}
+                className="w-full h-full object-cover rounded-t-3xl block select-none group-hover:scale-[1.02] transition-transform duration-300"
+              />
             </motion.div>
           </AnimatePresence>
 
@@ -178,21 +164,50 @@ export function BannerCarousel() {
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
+            </>
+          )}
+        </div>
 
-              {/* Dots Indicator */}
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+        {/* Info card attached right below the image */}
+        <div
+          onClick={() => openExploreModal(currentBanner)}
+          className="p-4 cursor-pointer hover:bg-emerald-50/20 dark:hover:bg-emerald-900/10 transition-colors flex items-center justify-between gap-3 border-t"
+          style={{ borderColor: 'var(--border-color)' }}
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                {currentBanner.category || 'General'}
+              </span>
+            </div>
+            <h3 className="font-heading font-bold text-sm sm:text-base truncate" style={{ color: 'var(--text-primary)' }}>
+              {currentBanner.title}
+            </h3>
+            {currentBanner.description && (
+              <p className="text-xs line-clamp-1 mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                {currentBanner.description}
+              </p>
+            )}
+          </div>
+
+          <div className="flex-shrink-0 flex items-center gap-2">
+            {banners.length > 1 && (
+              <div className="flex gap-1.5 mr-2">
                 {banners.map((_, index) => (
                   <button
                     key={index}
                     onClick={(e) => { e.stopPropagation(); setDirection(index > currentIndex ? 1 : -1); setCurrentIndex(index); }}
                     className={`h-1.5 rounded-full transition-all duration-300 ${
-                      index === currentIndex ? 'bg-white w-6' : 'bg-white/40 w-1.5'
+                      index === currentIndex ? 'bg-emerald-500 w-5' : 'bg-gray-300 dark:bg-gray-700 w-1.5'
                     }`}
                   />
                 ))}
               </div>
-            </>
-          )}
+            )}
+            <button className="px-3 py-1.5 rounded-xl gradient-emerald text-white text-xs font-semibold shadow-sm flex items-center gap-1">
+              Explore <Sparkles className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -21,11 +21,23 @@ const CONTENT_TYPES = [
 export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps) {
   const { user } = useAuth();
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [residenceArea, setResidenceArea] = useState('');
+  const [educationLevel, setEducationLevel] = useState('');
+  const [specialization, setSpecialization] = useState('');
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [existingRequest, setExistingRequest] = useState<any>(null);
   const [loadingCheck, setLoadingCheck] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.displayName || '');
+      setEmail(user.email || '');
+    }
+  }, [user]);
 
   useEffect(() => {
     async function checkRequest() {
@@ -74,6 +86,22 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
       setSubmitError('Please sign in to submit a creator request.');
       return;
     }
+    if (!fullName.trim()) {
+      setSubmitError('Please enter your full name.');
+      return;
+    }
+    if (!email.trim()) {
+      setSubmitError('Please enter your email address.');
+      return;
+    }
+    if (!residenceArea.trim()) {
+      setSubmitError('Please enter your residence area / city / country.');
+      return;
+    }
+    if (!specialization) {
+      setSubmitError('Please select your specialization / role (e.g. Calligrapher, Graphic Designer, Content Creator, Writer, Scholar, Teacher).');
+      return;
+    }
     if (selectedTypes.length === 0) {
       setSubmitError('Please select at least one content type you intend to create.');
       return;
@@ -83,9 +111,12 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
     try {
       const requestData = {
         userId: user.uid,
-        userEmail: user.email || '',
-        userName: user.displayName || user.email?.split('@')[0] || 'User',
+        userEmail: email.trim().toLowerCase(),
+        userName: fullName.trim(),
         userPhotoURL: user.photoURL || '',
+        residenceArea: residenceArea.trim(),
+        educationLevel: educationLevel.trim(),
+        specialization,
         contentTypes: selectedTypes,
         additionalInfo: additionalInfo.trim(),
         status: 'pending',
@@ -257,17 +288,105 @@ export function BecomeCreatorModal({ isOpen, onClose }: BecomeCreatorModalProps)
               </div>
             </div>
 
+            {/* Detailed Applicant Profile Fields */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                Personal & Creator Details
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-primary)' }}>
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none focus:border-emerald-500"
+                    style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-primary)' }}>
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. user@gmail.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none focus:border-emerald-500"
+                    style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-primary)' }}>
+                    Residence Area / Country *
+                  </label>
+                  <input
+                    type="text"
+                    value={residenceArea}
+                    onChange={(e) => setResidenceArea(e.target.value)}
+                    placeholder="e.g. Yaounde, Cameroon / London, UK"
+                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none focus:border-emerald-500"
+                    style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-primary)' }}>
+                    Educational / Islamic Level (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={educationLevel}
+                    onChange={(e) => setEducationLevel(e.target.value)}
+                    placeholder="e.g. Bachelor's in Islamic Studies / Student"
+                    className="w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none focus:border-emerald-500"
+                    style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-primary)' }}>
+                  Your Real Creator Role / Specialization *
+                </label>
+                <select
+                  value={specialization}
+                  onChange={(e) => setSpecialization(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none focus:border-emerald-500"
+                  style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                >
+                  <option value="">Select your primary role...</option>
+                  <option value="Calligrapher & Designer">Calligrapher & Graphic Designer</option>
+                  <option value="Content Creator">Media & Video Content Creator</option>
+                  <option value="Writer & Article Author">Writer & Article Author</option>
+                  <option value="Islamic Scholar">Islamic Scholar (Aalim / Sheikh)</option>
+                  <option value="Islamic Teacher">Islamic Teacher / Instructor</option>
+                  <option value="Quran Reciter">Quran Reciter & Audio Artist</option>
+                  <option value="Other Beneficial Field">Other Beneficial Field</option>
+                </select>
+              </div>
+            </div>
+
             {/* Information Form */}
             <div>
               <label className="text-xs font-semibold mb-1 block" style={{ color: 'var(--text-primary)' }}>
-                Tell us about yourself / Additional Info (Optional)
+                Tell us about yourself / Additional Background Info (Optional)
               </label>
               <textarea
                 value={additionalInfo}
                 onChange={(e) => setAdditionalInfo(e.target.value)}
-                placeholder="Share your background, channel links, qualifications, or reasons for becoming a creator..."
-                rows={3}
-                className="w-full px-4 py-3 rounded-2xl border text-xs outline-none focus:border-emerald-500 resize-none"
+                placeholder="Share channel links, previous work, qualifications, or goals..."
+                rows={2}
+                className="w-full px-4 py-2.5 rounded-2xl border text-xs outline-none focus:border-emerald-500 resize-none"
                 style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
               />
             </div>

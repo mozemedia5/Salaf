@@ -12,6 +12,9 @@ interface CreatorRequest {
   userEmail: string;
   userName: string;
   userPhotoURL?: string;
+  residenceArea?: string;
+  educationLevel?: string;
+  specialization?: string;
   contentTypes: string[];
   additionalInfo?: string;
   status: 'pending' | 'approved' | 'declined';
@@ -225,6 +228,13 @@ export function AdminManagement() {
                   <div>
                     <h4 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{req.userName}</h4>
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{req.userEmail}</p>
+                    {(req.specialization || req.residenceArea || req.educationLevel) && (
+                      <div className="mt-2 text-xs space-y-0.5" style={{ color: 'var(--text-secondary)' }}>
+                        {req.specialization && <p><strong>Role / Specialization:</strong> {req.specialization}</p>}
+                        {req.residenceArea && <p><strong>Residence:</strong> {req.residenceArea}</p>}
+                        {req.educationLevel && <p><strong>Education / Level:</strong> {req.educationLevel}</p>}
+                      </div>
+                    )}
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Wants to create:</span>
                       {req.contentTypes?.map(ct => (

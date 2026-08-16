@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, ArrowRight, Image as ImageIcon, Video as VideoIcon, Play, LogIn, Sparkles, BookOpen, Music, Shield, ArrowUpRight, Compass, Activity, Eye, Heart } from 'lucide-react';
+import { Download, ArrowRight, Image as ImageIcon, Video as VideoIcon, Play, LogIn, Sparkles, BookOpen, Music, Shield, ArrowUpRight, Compass } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollReveal } from '@/components/ui-custom/ScrollReveal';
 import { SectionHeader } from '@/components/ui-custom/SectionHeader';
@@ -195,64 +195,6 @@ export function HomeView() {
         </motion.div>
       </ScrollReveal>
 
-      {/* CJ DROPSHIPPING-STYLE LIVE METRICS & FEATURE GRID (Styled like Super Admin Analytics) */}
-      <div className="px-4 mt-2">
-        <div className="p-4 rounded-2xl border shadow-sm space-y-3" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-emerald-500" />
-              <h3 className="font-heading font-bold text-xs uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
-                Platform Analytics & Live Hub
-              </h3>
-            </div>
-            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-              Real-time Active
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <div className="p-2.5 rounded-xl border flex flex-col" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-semibold" style={{ color: 'var(--text-muted)' }}>Lectures</span>
-                <VideoIcon className="w-3.5 h-3.5 text-blue-500" />
-              </div>
-              <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{videos.length}</span>
-              <span className="text-[8px] text-emerald-500 font-medium">+100% Verified</span>
-            </div>
-
-            <div className="p-2.5 rounded-xl border flex flex-col" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-semibold" style={{ color: 'var(--text-muted)' }}>Audio Tracks</span>
-                <Music className="w-3.5 h-3.5 text-purple-500" />
-              </div>
-              <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{recentAudio.length}</span>
-              <span className="text-[8px] text-emerald-500 font-medium">Live Recitations</span>
-            </div>
-
-            <div className="p-2.5 rounded-xl border flex flex-col" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-semibold" style={{ color: 'var(--text-muted)' }}>Total Views</span>
-                <Eye className="w-3.5 h-3.5 text-amber-500" />
-              </div>
-              <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                {videos.reduce((acc, v) => acc + (v.viewCount || 0), 0).toLocaleString()}
-              </span>
-              <span className="text-[8px] text-emerald-500 font-medium">&uarr; Trending</span>
-            </div>
-
-            <div className="p-2.5 rounded-xl border flex flex-col" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-semibold" style={{ color: 'var(--text-muted)' }}>Likes</span>
-                <Heart className="w-3.5 h-3.5 text-rose-500" />
-              </div>
-              <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-                {videos.reduce((acc, v) => acc + (v.likes || 0), 0).toLocaleString()}
-              </span>
-              <span className="text-[8px] text-emerald-500 font-medium">Community Engagement</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* 2. LOGIN CTA for guests */}
       <AnimatePresence>

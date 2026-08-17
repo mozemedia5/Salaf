@@ -49,6 +49,39 @@ export function ArticleReaderView() {
     });
   }, [selectedArticleId]);
 
+  useEffect(() => {
+    if (!article) return;
+    const description = article.excerpt || `Read ${article.title} on Salaf.`;
+    document.title = `${article.title} | Salaf`;
+    let meta = document.head.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.appendChild(meta);
+    }
+    meta.content = description;
+
+    const existing = document.getElementById('salaf-article-jsonld');
+    existing?.remove();
+    const script = document.createElement('script');
+    script.id = 'salaf-article-jsonld';
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: article.title,
+      description,
+      url: window.location.href,
+      image: article.featuredImageURL || undefined,
+      author: { '@type': 'Person', name: article.authorName || 'Salaf' },
+      articleSection: article.category || undefined,
+      datePublished: article.createdAt || undefined,
+      inLanguage: 'en',
+    });
+    document.head.appendChild(script);
+    return () => document.getElementById('salaf-article-jsonld')?.remove();
+  }, [article]);
+
   // Fetch related articles
   useEffect(() => {
     if (!article) return;

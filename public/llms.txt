@@ -1,0 +1,23 @@
+# Salaf
+
+> Salaf is a public platform for accessing beneficial Islamic knowledge and resources.
+
+## Public resources
+
+- Home: /
+- Explore: /explore
+- Islamic lectures and videos: /videos
+- Audio lessons: /audio
+- Articles: /articles
+- Public gallery: /gallery
+- Support and public campaigns: /donate
+- Privacy policy: /privacy-policy
+- Terms of service: /terms-of-service
+
+## Discovery and access
+
+The canonical public discovery feed is `/sitemap.xml`. Crawl directives are available at `/robots.txt`. Article detail URLs use the format `/articles/{article-id}` when an article is publicly available. Dynamic records are sourced from the application’s public Firestore content and should not be inferred when unavailable.
+
+## Restricted resources
+
+Profiles, notifications, user questions, administration, authentication, and user-generated private data are restricted and are not public crawl targets.

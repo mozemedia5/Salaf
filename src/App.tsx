@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Analytics } from '@vercel/analytics/react';
+import { MetadataManager } from '@/components/seo/MetadataManager';
 import { AppShell } from '@/components/layout/AppShell';
 import { FullAudioPlayer } from '@/components/audio/FullAudioPlayer';
 import { HomeView } from '@/views/HomeView';
@@ -17,6 +18,7 @@ import { PrivacyPolicyView } from '@/views/PrivacyPolicyView';
 import { TermsOfServiceView } from '@/views/TermsOfServiceView';
 import { AdminDashboardView } from '@/views/AdminDashboardView';
 import { UserQuestionsView } from '@/views/UserQuestionsView';
+import { NotFoundView } from '@/views/NotFoundView';
 import { useThemeStore } from '@/stores/themeStore';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -29,6 +31,7 @@ function App() {
   const navigateTo = useNavigationStore((s) => s.navigateTo);
   const user = useAuthStore((s) => s.user);
   const initAuth = useAuthStore((s) => s.initAuth);
+  const syncFromLocation = useNavigationStore((s) => s.syncFromLocation);
 
   const prevQuestionsRef = useRef<Record<string, string>>({});
   const isFirstLoadQuestionsRef = useRef(true);
@@ -38,6 +41,12 @@ function App() {
 
   const prevNotifsRef = useRef<Record<string, boolean>>({});
   const isFirstLoadNotifsRef = useRef(true);
+
+  // Keep browser history, refreshes, bookmarks, and direct deep links in sync with the view store.
+  useEffect(() => {
+    window.addEventListener('popstate', syncFromLocation);
+    return () => window.removeEventListener('popstate', syncFromLocation);
+  }, [syncFromLocation]);
 
   // Initialize Auth state listener globally
   useEffect(() => {
@@ -242,12 +251,14 @@ function App() {
       case 'notifications': return <NotificationsView />;
       case 'privacy-policy': return <PrivacyPolicyView />;
       case 'terms-of-service': return <TermsOfServiceView />;
-      default: return <HomeView />;
+      case 'not-found': return <NotFoundView />;
+      default: return <NotFoundView />;
     }
   };
 
   return (
     <AppShell>
+      <MetadataManager />
       <AnimatePresence mode="wait">
         <motion.div
           key={currentView}

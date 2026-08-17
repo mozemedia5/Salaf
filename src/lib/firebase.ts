@@ -4,7 +4,7 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyFormatCheckBypassed12345",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "development-placeholder",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "salaf-platform.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "salaf-platform",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "salaf-platform.appspot.com",

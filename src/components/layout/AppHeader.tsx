@@ -22,6 +22,7 @@ const VIEW_TITLES: Record<ViewId, string> = {
   'terms-of-service': 'Terms of Service',
   'admin-dashboard': 'Admin Dashboard',
   'user-questions': 'My Questions',
+  'not-found': 'Page Not Found',
 };
 
 const SHOW_BACK: ViewId[] = ['explore', 'article-detail', 'video-player', 'audio-player', 'notifications', 'search', 'privacy-policy', 'terms-of-service', 'user-questions', 'gallery', 'articles'];

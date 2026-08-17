@@ -8,12 +8,13 @@ Add the following environment variables in your Vercel Project Dashboard (**Sett
 
 | Variable Name | Value |
 |---------------|-------|
-| `VITE_FIREBASE_API_KEY` | `AIzaSyDgg6vkE5QueU7Y2aa0i01ZzS7bJKe1_mk` |
-| `VITE_FIREBASE_AUTH_DOMAIN` | `manhaji-salaf.firebaseapp.com` |
-| `VITE_FIREBASE_PROJECT_ID` | `manhaji-salaf` |
-| `VITE_FIREBASE_STORAGE_BUCKET` | `manhaji-salaf.firebasestorage.app` |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `46470231862` |
-| `VITE_FIREBASE_APP_ID` | `1:46470231862:web:7d4c8305774ca846092597` |
+| `VITE_FIREBASE_API_KEY` | Set from your private Vercel project environment settings |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Set from your Firebase project configuration |
+| `VITE_FIREBASE_PROJECT_ID` | Set from your Firebase project configuration |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Set from your Firebase project configuration |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Set from your Firebase project configuration |
+| `VITE_FIREBASE_APP_ID` | Set from your Firebase project configuration |
+| `VITE_SITE_URL` | `https://manhaji-salaf.vercel.app` |
 
 ## 2. Security Reminder
 
@@ -31,4 +32,8 @@ The application is now configured to use these variables via `import.meta.env`. 
 
 ## 4. Google Sign-in Requirements
 
-Ensure that your Vercel deployment URL (e.g., `https://your-app.vercel.app`) is added to the **Authorized domains** in your Firebase Console (**Authentication > Settings > Authorized domains**).
+Ensure that `manhaji-salaf.vercel.app` is added to the **Authorized domains** in your Firebase Console (**Authentication > Settings > Authorized domains**). After purchasing and connecting `salaf.com`, add `salaf.com` there as well.
+
+## 5. SEO domain migration
+
+The current canonical domain is `https://manhaji-salaf.vercel.app`. The application reserves `https://salaf.com` as the future domain. After `salaf.com` is purchased, connected to Vercel, and verified, set `VITE_SITE_URL=https://salaf.com` in Vercel and redeploy. Then verify canonical tags, Open Graph URLs, JSON-LD, `robots.txt`, `sitemap.xml`, redirects, and Search Console ownership before treating `salaf.com` as canonical.

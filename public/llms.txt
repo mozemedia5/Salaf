@@ -2,21 +2,31 @@
 
 > Salaf is a public platform for accessing beneficial Islamic knowledge and resources.
 
+The current production site is https://manhaji-salaf.vercel.app/. The planned future domain is https://salaf.com/ after the domain is purchased, connected to Vercel, and verified. Until that migration is complete, agents should treat the Vercel domain as canonical.
+
 ## Public resources
 
-- Home: /
-- Explore: /explore
-- Islamic lectures and videos: /videos
-- Audio lessons: /audio
-- Articles: /articles
-- Public gallery: /gallery
-- Support and public campaigns: /donate
-- Privacy policy: /privacy-policy
-- Terms of service: /terms-of-service
+Home: https://manhaji-salaf.vercel.app/
+
+Explore: https://manhaji-salaf.vercel.app/explore
+
+Islamic lectures and videos: https://manhaji-salaf.vercel.app/videos
+
+Audio lessons: https://manhaji-salaf.vercel.app/audio
+
+Articles: https://manhaji-salaf.vercel.app/articles
+
+Public gallery: https://manhaji-salaf.vercel.app/gallery
+
+Support and public campaigns: https://manhaji-salaf.vercel.app/donate
+
+Privacy policy: https://manhaji-salaf.vercel.app/privacy-policy
+
+Terms of service: https://manhaji-salaf.vercel.app/terms-of-service
 
 ## Discovery and access
 
-The canonical public discovery feed is `/sitemap.xml`. Crawl directives are available at `/robots.txt`. Article detail URLs use the format `/articles/{article-id}` when an article is publicly available. Dynamic records are sourced from the application’s public Firestore content and should not be inferred when unavailable.
+The canonical public discovery feed is https://manhaji-salaf.vercel.app/sitemap.xml. Crawl directives are available at https://manhaji-salaf.vercel.app/robots.txt. Article detail URLs use the format https://manhaji-salaf.vercel.app/articles/{article-id} when an article is publicly available. Dynamic records are sourced from the application’s public Firestore content and should not be inferred when unavailable.
 
 ## Restricted resources
 

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { pathForRoute } from '@/lib/routing';
 import type { ViewId } from '@/types';
+import { absoluteSiteUrl, SITE_URL } from '@/lib/site';
 
 const SITE_NAME = 'Salaf';
 const SITE_DESCRIPTION = 'A place to access beneficial Islamic lectures, audio, articles, and resources.';
@@ -52,7 +53,7 @@ export function MetadataManager() {
     const metadata = ROUTE_METADATA[currentView] ?? ROUTE_METADATA.home;
     const isPrivate = ['profile', 'notifications', 'admin-dashboard', 'user-questions', 'not-found'].includes(currentView);
     const pathname = pathForRoute(currentView as ViewId, selectedArticleId);
-    const url = new URL(pathname, window.location.origin).toString();
+    const url = absoluteSiteUrl(pathname);
     const robots = isPrivate ? 'noindex, nofollow, noarchive' : 'index, follow';
 
     document.title = metadata.title;
@@ -83,8 +84,8 @@ export function MetadataManager() {
       description: metadata.description,
       url,
       inLanguage: 'en',
-      isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: new URL('/', window.location.origin).toString() },
-      ...(currentView === 'home' ? { potentialAction: { '@type': 'SearchAction', target: `${window.location.origin}/articles?search={search_term_string}`, 'query-input': 'required name=search_term_string' } } : {}),
+      isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+      ...(currentView === 'home' ? { potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/articles?search={search_term_string}`, 'query-input': 'required name=search_term_string' } } : {}),
     };
     const script = document.createElement('script');
     script.id = 'salaf-route-jsonld';

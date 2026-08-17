@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import { doc, getDoc, collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Article } from '@/types';
+import { absoluteSiteUrl } from '@/lib/site';
+import { pathForRoute } from '@/lib/routing';
 
 export function ArticleReaderView() {
   const { selectedArticleId } = useNavigationStore();
@@ -71,7 +73,7 @@ export function ArticleReaderView() {
       '@type': 'Article',
       headline: article.title,
       description,
-      url: window.location.href,
+      url: absoluteSiteUrl(pathForRoute('article-detail', article.id)),
       image: article.featuredImageURL || undefined,
       author: { '@type': 'Person', name: article.authorName || 'Salaf' },
       articleSection: article.category || undefined,

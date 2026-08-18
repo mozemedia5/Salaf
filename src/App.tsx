@@ -218,7 +218,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem('noor-theme');
+    const saved = localStorage.getItem('salaf-theme');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);

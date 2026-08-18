@@ -27,7 +27,7 @@ export function PrivacyPolicyView() {
         <ScrollReveal className="space-y-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>1. Introduction</h3>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            Welcome to Noor. We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about our policy, or our practices with regards to your personal information, please contact us.
+            Welcome to Salaf. We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about our policy, or our practices with regards to your personal information, please contact us.
           </p>
         </ScrollReveal>
 
@@ -75,7 +75,7 @@ export function PrivacyPolicyView() {
         <ScrollReveal className="space-y-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>6. Contact Us</h3>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            If you have questions or comments about this policy, you may email us at support@noor-app.com.
+            If you have questions or comments about this policy, you may email us at our Help & Support form.
           </p>
         </ScrollReveal>
       </div>

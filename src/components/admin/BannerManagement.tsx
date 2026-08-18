@@ -43,6 +43,7 @@ export function BannerManagement() {
   const [newVideo, setNewVideo] = useState({ title: '', videoURL: '' });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [mediaUploading, setMediaUploading] = useState(false);
   const [bannerStats, setBannerStats] = useState<Record<string, BannerStats>>({});
 
   useEffect(() => {
@@ -367,8 +368,8 @@ export function BannerManagement() {
 
               {/* Media Images Collection */}
               <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
-                <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
-                  <ImageIcon className="w-4 h-4 text-emerald-500" /> Attached Images with Descriptions
+                  <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                  <ImageIcon className="w-4 h-4 text-emerald-500" /> Attached Images with Descriptions ({formData.mediaImages.length}/20)
                 </label>
                 {formData.mediaImages.map((img, idx) => (
                   <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 text-xs">
@@ -388,6 +389,7 @@ export function BannerManagement() {
                     label="Add Gallery Image"
                     currentImageUrl={newImage.url}
                     onUploaded={(url) => setNewImage({ ...newImage, url })}
+                    onUploadStateChange={setMediaUploading}
                   />
                   <input
                     type="text"
@@ -399,14 +401,15 @@ export function BannerManagement() {
                   />
                   <button
                     type="button"
-                    disabled={!newImage.url}
+                    disabled={!newImage.url || !newImage.description.trim() || formData.mediaImages.length >= 20 || mediaUploading}
                     onClick={() => {
-                      setFormData({ ...formData, mediaImages: [...formData.mediaImages, newImage] });
+                      if (!newImage.url || !newImage.description.trim() || formData.mediaImages.length >= 20) return;
+                      setFormData({ ...formData, mediaImages: [...formData.mediaImages, { url: newImage.url, description: newImage.description.trim() }] });
                       setNewImage({ url: '', description: '' });
                     }}
                     className="w-full py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold disabled:opacity-50"
                   >
-                    + Add Image
+                    {formData.mediaImages.length >= 20 ? 'Maximum of 20 Images Reached' : mediaUploading ? 'Uploading Image...' : '+ Add Image'}
                   </button>
                 </div>
               </div>
@@ -462,7 +465,7 @@ export function BannerManagement() {
                 <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="w-4 h-4 rounded accent-emerald-500" />
                 <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Active</span>
               </label>
-              <button onClick={handleSave} disabled={saving || uploading || !formData.title || !formData.imageURL}
+              <button onClick={handleSave} disabled={saving || uploading || mediaUploading || !formData.title || !formData.imageURL}
                 className="w-full h-12 rounded-xl gradient-emerald text-white font-semibold shadow-glow disabled:opacity-50">
                 {saving ? 'Saving...' : editingBanner ? 'Update' : 'Add Banner'}
               </button>

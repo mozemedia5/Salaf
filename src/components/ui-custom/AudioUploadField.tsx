@@ -17,7 +17,7 @@ export function AudioUploadField({
   uploadPreset,
   label,
   onUploaded,
-  accept = "*",
+  accept = "audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,.mp3,.wav,.m4a",
   currentAudioUrl = "",
   onUploadStateChange,
 }: AudioUploadFieldProps) {
@@ -60,12 +60,13 @@ export function AudioUploadField({
 
     try {
       const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "manhaji-salaf";
+      const effectivePreset = uploadPreset || import.meta.env.VITE_CLOUDINARY_AUDIO_UPLOAD_PRESET || "salaf_audio";
       // Treat audio under the video resource type as Cloudinary requires
       const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("upload_preset", uploadPreset);
+      formData.append("upload_preset", effectivePreset);
       formData.append("folder", folder);
 
       const xhr = new XMLHttpRequest();
@@ -88,6 +89,7 @@ export function AudioUploadField({
             const data = JSON.parse(xhr.responseText);
             if (data.secure_url) {
               setPreview(data.secure_url);
+              URL.revokeObjectURL(localUrl);
               // Save audio URL and duration
               onUploaded(data.secure_url, data.duration || 0);
               setError(null);
@@ -145,6 +147,7 @@ export function AudioUploadField({
       activeXhrRef.current = null;
     }
     setPreview("");
+    URL.revokeObjectURL(preview);
     setError(null);
     setProgress(0);
     onUploaded("", 0);

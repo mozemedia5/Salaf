@@ -61,6 +61,9 @@ export const useAudioStore = create<AudioStore>((set, get) => {
     audioInstance.addEventListener("ended", () => {
       set({ isPlaying: false, currentTime: 0, progress: 0 });
     });
+    audioInstance.addEventListener("error", () => {
+      set({ isPlaying: false });
+    });
   }
 
   return {
@@ -84,12 +87,17 @@ export const useAudioStore = create<AudioStore>((set, get) => {
             audioInstance.load();
           }
           audioInstance.playbackRate = get().playbackSpeed;
-          audioInstance.play().catch(err => {
-            console.error("HTML5 Audio playback failed:", err);
-          });
+          audioInstance.play()
+            .then(() => set({ isPlaying: true }))
+            .catch(err => {
+              console.error("HTML5 Audio playback failed:", err);
+              set({ isPlaying: false });
+            });
+        } else {
+          set({ isPlaying: false });
         }
       }
-      set({ currentTrack: track, isPlaying: true, isMiniPlayerVisible: true });
+      set({ currentTrack: track, isMiniPlayerVisible: true });
     },
 
     pause: () => {
@@ -112,12 +120,15 @@ export const useAudioStore = create<AudioStore>((set, get) => {
             audioInstance.load();
           }
           audioInstance.playbackRate = get().playbackSpeed;
-          audioInstance.play().catch(err => {
-            console.error("HTML5 Audio playback failed:", err);
-          });
+          audioInstance.play()
+            .then(() => set({ isPlaying: true }))
+            .catch(err => {
+              console.error("HTML5 Audio playback failed:", err);
+              set({ isPlaying: false });
+            });
         }
       }
-      set({ isPlaying: !isPlayingNow });
+      if (isPlayingNow) set({ isPlaying: false });
     },
 
     seek: (time) => {

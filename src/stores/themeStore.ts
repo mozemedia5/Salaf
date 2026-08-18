@@ -21,6 +21,6 @@ export const useThemeStore = create<ThemeStore>()(
         set({ theme });
       },
     }),
-    { name: 'noor-theme' }
+    { name: 'salaf-theme' }
   )
 );

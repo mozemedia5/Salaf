@@ -10,7 +10,7 @@ import {
   updatePassword,
   type User
 } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
+import { auth, authPersistenceReady, googleProvider } from '@/lib/firebase';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -28,6 +28,7 @@ export function useAuth() {
   const login = async (email: string, pass: string) => {
     setError(null);
     try {
+      await authPersistenceReady;
       await signInWithEmailAndPassword(auth, email, pass);
     } catch (err: any) {
       setError(err.message);
@@ -38,6 +39,7 @@ export function useAuth() {
   const signup = async (email: string, pass: string) => {
     setError(null);
     try {
+      await authPersistenceReady;
       await createUserWithEmailAndPassword(auth, email, pass);
     } catch (err: any) {
       setError(err.message);
@@ -52,6 +54,7 @@ export function useAuth() {
   const loginWithGoogle = async () => {
     setError(null);
     try {
+      await authPersistenceReady;
       await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
       setError(err.message);

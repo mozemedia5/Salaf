@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { auth, authPersistenceReady, db } from '@/lib/firebase';
 import type { AdminUser } from '@/types';
 
 // If the signed-in user has no `admins/{uid}` doc yet but was invited via
@@ -102,6 +102,7 @@ export function useAdminAuth() {
   const login = async (email: string, password: string) => {
     setError(null);
     try {
+      await authPersistenceReady;
       const result = await signInWithEmailAndPassword(auth, email, password);
 
       // Check if user is an admin

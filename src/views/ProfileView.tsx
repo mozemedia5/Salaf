@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { EditProfileModal } from '@/components/auth/EditProfileModal';
 import { AskQuestionModal } from '@/components/questions/AskQuestionModal';
 import { BecomeCreatorModal } from '@/components/creator/BecomeCreatorModal';
+import { SupportModal } from '@/components/support/SupportModal';
 
 interface MenuGroup {
   title: string;
@@ -66,6 +67,7 @@ export function ProfileView() {
   const [showQuestions, setShowQuestions] = useState(false);
   const [showAskQuestion, setShowAskQuestion] = useState(false);
   const [showBecomeCreator, setShowBecomeCreator] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const [activityTab, setActivityTab] = useState<ActivityTab>('all');
 
   useEffect(() => {
@@ -335,7 +337,7 @@ export function ProfileView() {
         { icon: Lock, label: 'Change Password', action: handleChangePassword },
         { icon: Shield, label: 'Privacy Policy', action: () => navigateTo('privacy-policy') },
         { icon: FileText, label: 'Terms of Service', action: () => navigateTo('terms-of-service') },
-        { icon: HelpCircle, label: 'Help & Support' },
+        { icon: HelpCircle, label: 'Help & Support', action: () => setShowSupport(true) },
       ],
     },
   ];
@@ -461,6 +463,7 @@ export function ProfileView() {
       <AnimatePresence>
         {isEditModalOpen && <EditProfileModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} mode={editMode} />}
         {showBecomeCreator && <BecomeCreatorModal isOpen={showBecomeCreator} onClose={() => setShowBecomeCreator(false)} />}
+        {showSupport && <SupportModal isOpen={showSupport} onClose={() => setShowSupport(false)} />}
       </AnimatePresence>
 
       <AlertDialog open={isLogoutDialogOpen} onOpenChange={setLogoutDialogOpen}>

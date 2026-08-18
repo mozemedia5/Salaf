@@ -27,7 +27,7 @@ export function TermsOfServiceView() {
         <ScrollReveal className="space-y-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>1. Agreement to Terms</h3>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            These Terms of Service constitute a legally binding agreement made between you, whether personally or on behalf of an entity ("you") and Noor ("we," "us" or "our"), concerning your access to and use of the Noor application.
+            These Terms of Service constitute a legally binding agreement made between you, whether personally or on behalf of an entity ("you") and Salaf ("we," "us" or "our"), concerning your access to and use of the Salaf application.
           </p>
         </ScrollReveal>
 
@@ -69,7 +69,7 @@ export function TermsOfServiceView() {
         <ScrollReveal className="space-y-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>7. Governing Law</h3>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            These Terms shall be governed by and defined following the laws of our operating jurisdiction. Noor and yourself irrevocably consent that the courts shall have exclusive jurisdiction to resolve any dispute which may arise in connection with these terms.
+            These Terms shall be governed by and defined following the laws of our operating jurisdiction. Salaf and yourself irrevocably consent that the courts shall have exclusive jurisdiction to resolve any dispute which may arise in connection with these terms.
           </p>
         </ScrollReveal>
       </div>

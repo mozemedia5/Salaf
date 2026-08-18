@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Shield, X, CheckCircle, Clock, Sparkles, UserCheck, Check, Ban } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, setDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, serverTimestamp, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { AdminUser } from '@/types';
 
@@ -124,9 +124,13 @@ export function AdminManagement() {
 
   const handleApproveCreator = async (req: CreatorRequest) => {
     try {
-      // 1. Create or update user's admin document in `admins/{userId}`
+      const batch = writeBatch(db);
       const adminDocRef = doc(db, 'admins', req.userId);
-      await setDoc(adminDocRef, {
+      const requestRef = doc(db, 'creator_requests', req.id);
+      const notificationRef = doc(collection(db, 'notifications'));
+      const contentTypes = req.contentTypes || [];
+
+      batch.set(adminDocRef, {
         email: req.userEmail.toLowerCase(),
         displayName: req.userName || req.userEmail.split('@')[0],
         role: 'admin',
@@ -136,9 +140,9 @@ export function AdminManagement() {
         approvedBy: currentUser?.uid,
         createdAt: serverTimestamp(),
         permissions: {
-          canManageVideos: req.contentTypes.includes('videos') || req.contentTypes.includes('all'),
-          canManageArticles: req.contentTypes.includes('articles') || req.contentTypes.includes('all'),
-          canManageGallery: req.contentTypes.includes('images') || req.contentTypes.includes('all'),
+          canManageVideos: contentTypes.includes('videos') || contentTypes.includes('all'),
+          canManageArticles: contentTypes.includes('articles') || contentTypes.includes('all'),
+          canManageGallery: contentTypes.includes('images') || contentTypes.includes('all'),
           canManageDonations: false,
           canManageBanners: false,
           canManageAdmins: false,
@@ -146,18 +150,14 @@ export function AdminManagement() {
           canAnswerQuestions: true,
         },
       }, { merge: true });
-
-      // 2. Update request status
-      await updateDoc(doc(db, 'creator_requests', req.id), {
+      batch.update(requestRef, {
         status: 'approved',
         approvedAt: serverTimestamp(),
         approvedBy: currentUser?.uid,
       });
-
-      // 3. Send notification to user
-      await addDoc(collection(db, 'notifications'), {
-        title: '🎉 Creator Access Granted!',
-        body: 'Your request to become a Creator has been approved by Supreme Admin! Click Get Started to go to your Creator Dashboard.',
+      batch.set(notificationRef, {
+        title: 'Creator Access Granted',
+        body: 'Your request to become a Creator was approved by the Supreme Admin. Open your Creator Dashboard to get started.',
         type: 'announcement',
         targetUserId: req.userId,
         getStartedAction: true,
@@ -166,6 +166,7 @@ export function AdminManagement() {
         createdAt: serverTimestamp(),
         createdBy: currentUser?.uid,
       });
+      await batch.commit();
     } catch (err) {
       console.error('Error approving creator request:', err);
       alert('Failed to approve request. Please try again.');

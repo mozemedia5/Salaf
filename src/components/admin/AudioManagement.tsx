@@ -349,7 +349,8 @@ export function AudioManagement() {
               <div>
                 <AudioUploadField
                   folder="salaf/audio"
-                  uploadPreset="salaf_audio"
+                  uploadPreset={import.meta.env.VITE_CLOUDINARY_AUDIO_UPLOAD_PRESET || "salaf_audio"}
+                  accept="audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,.mp3,.wav,.m4a"
                   label="Upload Audio Lecture (.mp3, .wav, .m4a) *"
                   currentAudioUrl={formData.audioURL}
                   onUploaded={(url, durationSeconds) => {

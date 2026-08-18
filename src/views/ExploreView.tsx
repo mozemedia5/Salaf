@@ -158,16 +158,13 @@ export function ExploreView() {
         ))}
       </div>
 
-      {/* Horizontal Carousel Row of Banners (Each moves by its own horizontally) */}
+      {/* Featured banner row */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-heading font-bold text-base flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
             <Sparkles className="w-4 h-4 text-emerald-500" />
             Featured Highlights
           </h2>
-          <span className="text-[10px] text-emerald-500 font-semibold uppercase tracking-wider">
-            Scroll horizontally &rarr;
-          </span>
         </div>
 
         <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x-mandatory py-2">
